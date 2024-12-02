@@ -7,9 +7,7 @@ use std::path::Path;
 
 pub fn line_iter(path: &str) -> Lines<BufReader<File>> {
     let path = Path::new(path);
-
     let file = File::open(&path).expect(format!("couldn't open {}", path.display()).as_str());
-
     BufReader::new(file).lines()
 }
 
@@ -21,14 +19,15 @@ fn to_int_vec(s: String) -> Vec<i32> {
 
 fn to_2_ints(v: Vec<i32>) -> (i32, i32) {
     if v.len() != 2 {
-        panic!("Expected 2 integers per line, got {}", v.len(),);
+        panic!("Expected 2 integers per line, got {}", v.len());
     }
     (v[0], v[1])
 }
 
 pub fn as_int_pairs(path: &str) -> impl Iterator<Item = (i32, i32)> {
     line_iter(path)
-        .map(|maybe_line| to_int_vec(maybe_line.unwrap()))
+        .map(Result::unwrap)
+        .map(to_int_vec)
         .map(to_2_ints)
 }
 
