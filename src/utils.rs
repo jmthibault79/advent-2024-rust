@@ -42,3 +42,13 @@ pub fn freqs(v: Vec<i32>) -> HashMap<i32, i32> {
     }
     freqs
 }
+
+pub fn subsets_removing_1(v: &Vec<i32>) -> Vec<Vec<i32>> {
+    let mut result = Vec::new();
+    for i in 0..v.len() {
+        let mut subset = v[0..i].to_vec();
+        subset.extend_from_slice(&v[i + 1..]);
+        result.push(subset);
+    }
+    result
+}
