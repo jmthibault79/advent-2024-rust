@@ -17,6 +17,10 @@ fn to_int_vec(s: String) -> Vec<i32> {
         .collect()
 }
 
+pub fn as_int_vecs(path: &str) -> impl Iterator<Item = Vec<i32>> {
+    line_iter(path).map(Result::unwrap).map(to_int_vec)
+}
+
 fn to_2_ints(v: Vec<i32>) -> (i32, i32) {
     if v.len() != 2 {
         panic!("Expected 2 integers per line, got {}", v.len());
