@@ -52,3 +52,28 @@ pub fn subsets_removing_1(v: &Vec<i32>) -> Vec<Vec<i32>> {
     }
     result
 }
+
+fn to_char_vec(s: String) -> Vec<char> {
+    s.chars().collect()
+}
+
+pub fn as_matrix(path: &str) -> Vec<Vec<char>> {
+    line_iter(path)
+        .map(Result::unwrap)
+        .map(to_char_vec)
+        .collect()
+}
+
+pub fn flip_matrix(vv: &Vec<Vec<char>>) -> Vec<Vec<char>> {
+    let height = vv.len();
+    let width = vv[0].len();
+
+    let mut flipped = vec![vec![' '; height]; width];
+
+    for h_idx in 0..height {
+        for w_idx in 0..width {
+            flipped[w_idx][h_idx] = vv[h_idx][w_idx];
+        }
+    }
+    flipped
+}
