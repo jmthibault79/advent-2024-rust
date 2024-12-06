@@ -86,8 +86,61 @@ fn d4p1(path: &str) -> i32 {
     count + diagonal_matrix_scan(&mat, scan_pattern)
 }
 
+fn check_xmas(mat: &Vec<Vec<char>>) -> bool {
+    const MAS_LEN: usize = 3;
+
+    if mat.len() < MAS_LEN || mat[0].len() < MAS_LEN || mat[1][1] != 'A' {
+        return false;
+    } else {
+        match (mat[0][0], mat[0][2], mat[2][0], mat[2][2]) {
+            ('M', 'M', 'S', 'S') => true,
+            ('M', 'S', 'M', 'S') => true,
+            ('S', 'M', 'S', 'M') => true,
+            ('S', 'S', 'M', 'M') => true,
+            _ => false,
+        }
+    }
+}
+
+// find the "x-mas"es, like
+// M.M
+// .A.
+// S.S
+fn count_xmases(mat: &Vec<Vec<char>>) -> i32 {
+    const MAS_LEN: usize = 3;
+
+    if mat.len() < MAS_LEN || mat[0].len() < MAS_LEN {
+        return 0;
+    }
+
+    let mut count: i32 = 0;
+
+    let rows_to_check = mat.len() - MAS_LEN + 1;
+    let cols_to_check = mat[0].len() - MAS_LEN + 1;
+
+    let mut sub_matrix = vec![
+        vec!['.', '.', '.'],
+        vec!['.', '.', '.'],
+        vec!['.', '.', '.'],
+    ];
+
+    for row in 0..rows_to_check {
+        for col in 0..cols_to_check {
+            for sub_row in 0..MAS_LEN {
+                for sub_col in 0..MAS_LEN {
+                    sub_matrix[sub_row][sub_col] = mat[row + sub_row][col + sub_col];
+                }
+            }
+            count += if check_xmas(&sub_matrix) { 1 } else { 0 };
+        }
+    }
+
+    count
+}
+
 fn d4p2(path: &str) -> i32 {
-    0
+    let mut mat = utils::as_matrix(path);
+    count_xmases(&mat)
 }
 
 pub fn d4() {
@@ -173,5 +226,50 @@ mod tests {
         assert_eq!(diagonal_matrix_scan(&matrix, "da"), 1);
         assert_eq!(diagonal_matrix_scan(&matrix, "bc"), 1);
         assert_eq!(diagonal_matrix_scan(&matrix, "cb"), 1);
+    }
+
+    #[test]
+    fn check_xmas_too_small() {
+        assert_eq!(check_xmas(&vec![vec![]]), false);
+        assert_eq!(check_xmas(&vec![vec!['A']]), false);
+        assert_eq!(check_xmas(&vec![vec!['A', 'A'], vec!['A', 'A']]), false);
+    }
+
+    #[test]
+    fn check_xmas_missing() {
+        let matrix = vec![
+            vec!['A', 'A', 'A'],
+            vec!['A', 'A', 'A'],
+            vec!['A', 'A', 'A'],
+        ];
+        assert_eq!(check_xmas(&matrix), false);
+    }
+
+    #[test]
+    fn check_xmas_present_4x() {
+        let matrix_1 = vec![
+            vec!['M', 'A', 'M'],
+            vec!['A', 'A', 'A'],
+            vec!['S', 'A', 'S'],
+        ];
+        assert!(check_xmas(&matrix_1));
+        let matrix_2 = vec![
+            vec!['M', 'A', 'S'],
+            vec!['A', 'A', 'A'],
+            vec!['M', 'A', 'S'],
+        ];
+        assert!(check_xmas(&matrix_2));
+        let matrix_3 = vec![
+            vec!['S', 'A', 'M'],
+            vec!['A', 'A', 'A'],
+            vec!['S', 'A', 'M'],
+        ];
+        assert!(check_xmas(&matrix_3));
+        let matrix_4 = vec![
+            vec!['S', 'A', 'S'],
+            vec!['A', 'A', 'A'],
+            vec!['M', 'A', 'M'],
+        ];
+        assert!(check_xmas(&matrix_4));
     }
 }
