@@ -21,7 +21,7 @@ fn vec_scan(v: &Vec<char>, to_scan: &str) -> i32 {
 }
 
 fn diagonal_matrix_scan(mat: &Vec<Vec<char>>, to_scan: &str) -> i32 {
-    if to_scan.len() <2 {
+    if to_scan.len() < 2 {
         panic!("this algorithm doesn't work for len 0 or 1");
     }
 
@@ -67,23 +67,27 @@ fn diagonal_matrix_scan(mat: &Vec<Vec<char>>, to_scan: &str) -> i32 {
 fn d4p1(path: &str) -> i32 {
     let scan_pattern = "XMAS";
 
-    let mut vv = utils::as_matrix(path);
+    let mut mat = utils::as_matrix(path);
     let mut count: i32 = 0;
 
-    count += vv
+    count += mat
         .iter()
         .map(|row| vec_scan(row, scan_pattern))
         .sum::<i32>();
 
     // ok to replace original because it does not change the diagonal search
-    vv = utils::flip_matrix(&vv);
+    mat = utils::flip_matrix(&mat);
 
-    count += vv
+    count += mat
         .iter()
         .map(|row| vec_scan(row, scan_pattern))
         .sum::<i32>();
 
-    count + diagonal_matrix_scan(&vv, scan_pattern)
+    count + diagonal_matrix_scan(&mat, scan_pattern)
+}
+
+fn d4p2(path: &str) -> i32 {
+    0
 }
 
 pub fn d4() {
@@ -92,6 +96,8 @@ pub fn d4() {
     let path = "inputs/d4.txt";
     let mut result = d4p1(path);
     println!("Result Day 4 Part 1: {}", result);
+    result = d4p2(path);
+    println!("Result Day 4 Part 2: {}", result);
 }
 
 #[cfg(test)]
@@ -159,7 +165,6 @@ mod tests {
         let result = diagonal_matrix_scan(&matrix, "ab");
         assert_eq!(result, 0);
     }
-
 
     #[test]
     fn scan_diag_2x2() {
