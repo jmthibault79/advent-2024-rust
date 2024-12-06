@@ -38,11 +38,10 @@ fn diagonal_matrix_scan(mat: &Vec<Vec<char>>, to_scan: &str) -> i32 {
     let start_col_for_rev_check = to_scan.len() - 1;
 
     let mut scan_vec: Vec<char> = Vec::new();
-    for vert_scan_index in 0..rows_to_check {
-        for fwd_horiz_scan_index in 0..cols_to_check {
-            let (v, h) = (vert_scan_index, fwd_horiz_scan_index);
+    for row in 0..rows_to_check {
+        for col in 0..cols_to_check {
             for slice_builder in 0..to_scan.len() {
-                scan_vec.push(mat[v + slice_builder][h + slice_builder]);
+                scan_vec.push(mat[row + slice_builder][col + slice_builder]);
             }
             let scan_str: String = scan_vec.iter().collect();
             if scan_str == to_scan || scan_str == to_scan_rev {
@@ -50,10 +49,9 @@ fn diagonal_matrix_scan(mat: &Vec<Vec<char>>, to_scan: &str) -> i32 {
             }
             scan_vec.clear();
         }
-        for back_horiz_scan_index in start_col_for_rev_check..mat[0].len() {
-            let (v, h) = (vert_scan_index, back_horiz_scan_index);
+        for col in start_col_for_rev_check..mat[0].len() {
             for slice_builder in 0..to_scan.len() {
-                scan_vec.push(mat[v + slice_builder][h - slice_builder]);
+                scan_vec.push(mat[row + slice_builder][col - slice_builder]);
             }
             let scan_str: String = scan_vec.iter().collect();
             if scan_str == to_scan || scan_str == to_scan_rev {
@@ -85,11 +83,13 @@ fn d4p1(path: &str) -> i32 {
         .map(|row| vec_scan(row, scan_pattern))
         .sum::<i32>();
 
-    count
+    count + diagonal_matrix_scan(&vv, scan_pattern)
 }
 
 pub fn d4() {
-    let path = "inputs/d4sample1.txt";
+    //let path = "inputs/d4sample1.txt";
+    //let path = "inputs/d4sample2.txt";
+    let path = "inputs/d4.txt";
     let mut result = d4p1(path);
     println!("Result Day 4 Part 1: {}", result);
 }
