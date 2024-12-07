@@ -1,5 +1,6 @@
 use crate::utils;
 use multimap::MultiMap;
+use std::cmp::Ordering::{self, Greater, Less};
 
 fn parse_rule(s: String) -> (u32, u32) {
     let mut parts = s.split('|');
@@ -58,7 +59,7 @@ fn parse_pages(i: impl Iterator<Item = String>) -> (MultiMap<u32, u32>, Vec<Vec<
     (rules, page_data)
 }
 
-fn middle_value(data: Vec<u32>) -> u32 {
+fn middle_value(data: &Vec<u32>) -> u32 {
     if data.len() % 2 == 0 {
         panic!(
             "expected odd number of pages, got {} for {:?}",
@@ -72,26 +73,77 @@ fn middle_value(data: Vec<u32>) -> u32 {
 
 // a rule means: KEY must always come before any of the VALUEs in the data
 // it's fine if the KEY or any VALUE is not in the rules
-fn check_pages(data: Vec<u32>, rules: &MultiMap<u32, u32>) -> u32 {
+fn pages_in_order(data: &Vec<u32>, rules: &MultiMap<u32, u32>) -> bool {
     let mut before_me: Vec<u32> = Vec::new();
-    for page in &data {
+    for page in data {
         for must_come_before in &before_me {
             if let Some(to_check) = rules.get_vec(&page) {
                 if to_check.contains(&must_come_before) {
-                    return 0;
+                    return false;
                 }
             }
         }
         before_me.push(*page);
     }
-    middle_value(data)
+    true
+}
+
+// return the middle value of a correct ordering, else 0
+fn p1_result(data: &Vec<u32>, rules: &MultiMap<u32, u32>) -> u32 {
+    if pages_in_order(data, rules) {
+        middle_value(data)
+    } else {
+        0
+    }
+}
+
+fn rules_comparator(a: &u32, b: &u32, rules: &MultiMap<u32, u32>) -> Ordering {
+    if let Some(after_a) = rules.get_vec(a) {
+        if after_a.contains(b) {
+            return Less;
+        }
+    }
+
+    if let Some(after_b) = rules.get_vec(b) {
+        if after_b.contains(a) {
+            return Greater;
+        }
+    }
+
+    // if this isn't a valid assumption, I'll know quickly
+    panic!("{} and {} do not have a well defined ordering", a, b);
+}
+
+fn corrected_order(data: &Vec<u32>, rules: &MultiMap<u32, u32>) -> Vec<u32> {
+    let mut corrected = data.clone();
+    if !pages_in_order(data, rules) {
+        corrected.sort_by(|a, b| rules_comparator(a, b, rules));
+    }
+    corrected
+}
+
+// return the middle value of a corrected ordering, else 0
+fn p2_result(data: &Vec<u32>, rules: &MultiMap<u32, u32>) -> u32 {
+    if pages_in_order(data, rules) {
+        0
+    } else {
+        middle_value(&corrected_order(data, rules))
+    }
 }
 
 fn d5p1(path: &str) -> u32 {
     let (rules, page_data) = parse_pages(utils::string_iter(path));
     page_data
         .into_iter()
-        .map(|data| check_pages(data, &rules))
+        .map(|data| p1_result(&data, &rules))
+        .sum()
+}
+
+fn d5p2(path: &str) -> u32 {
+    let (rules, page_data) = parse_pages(utils::string_iter(path));
+    page_data
+        .into_iter()
+        .map(|data| p2_result(&data, &rules))
         .sum()
 }
 
@@ -100,6 +152,8 @@ pub fn d5() {
     let path = "inputs/d5.txt";
     let mut result = d5p1(path);
     println!("Result Day 5 Part 1: {}", result);
+    result = d5p2(path);
+    println!("Result Day 5 Part 2: {}", result);
 }
 
 #[cfg(test)]
@@ -141,8 +195,8 @@ mod tests {
         let mut rules = MultiMap::new();
         rules.insert(1, 2);
 
-        assert_eq!(check_pages(vec![1, 2], &rules), 1);
-        assert_eq!(check_pages(vec![2, 1], &rules), 0);
+        assert!(pages_in_order(&vec![1, 2], &rules));
+        assert!(!pages_in_order(&vec![2, 1], &rules));
     }
 
     #[test]
@@ -152,26 +206,43 @@ mod tests {
         rules.insert(1, 3);
         rules.insert(2, 3);
 
-        assert_eq!(check_pages(vec![1, 2, 3], &rules), 2);
-        assert_eq!(check_pages(vec![1, 2, 4], &rules), 2);
-        assert_eq!(check_pages(vec![1, 3, 4], &rules), 3);
-        assert_eq!(check_pages(vec![2, 3, 4], &rules), 3);
-        assert_eq!(check_pages(vec![1], &rules), 1);
-        assert_eq!(check_pages(vec![2], &rules), 2);
-        assert_eq!(check_pages(vec![3], &rules), 3);
-        assert_eq!(check_pages(vec![4], &rules), 4);
-        assert_eq!(check_pages(vec![1, 2, 3, 4, 5], &rules), 3);
-        assert_eq!(check_pages(vec![4, 1, 2, 3, 5], &rules), 2);
+        assert!(pages_in_order(&vec![1, 2, 3], &rules));
+        assert!(pages_in_order(&vec![1, 2, 4], &rules));
+        assert!(pages_in_order(&vec![1, 3, 4], &rules));
+        assert!(pages_in_order(&vec![2, 3, 4], &rules));
+        assert!(pages_in_order(&vec![1], &rules));
+        assert!(pages_in_order(&vec![2], &rules));
+        assert!(pages_in_order(&vec![3], &rules));
+        assert!(pages_in_order(&vec![4], &rules));
+        assert!(pages_in_order(&vec![1, 2, 3, 4, 5], &rules));
+        assert!(pages_in_order(&vec![4, 1, 2, 3, 5], &rules));
 
-        assert_eq!(check_pages(vec![3, 2, 1], &rules), 0);
-        assert_eq!(check_pages(vec![3, 2, 4], &rules), 0);
-        assert_eq!(check_pages(vec![3, 1, 4], &rules), 0);
-        assert_eq!(check_pages(vec![2, 1, 4], &rules), 0);
+        assert!(!pages_in_order(&vec![3, 2, 1], &rules));
+        assert!(!pages_in_order(&vec![3, 2, 4], &rules));
+        assert!(!pages_in_order(&vec![3, 1, 4], &rules));
+        assert!(!pages_in_order(&vec![2, 1, 4], &rules));
     }
 
     #[test]
     fn middle_value_simple() {
-        assert_eq!(middle_value(vec![1]), 1);
-        assert_eq!(middle_value(vec![1, 2, 3]), 2);
+        assert_eq!(middle_value(&vec![1]), 1);
+        assert_eq!(middle_value(&vec![1, 2, 3]), 2);
+    }
+
+    #[test]
+    fn corrected_order_simple() {
+        let mut rules = MultiMap::new();
+        rules.insert(1, 2);
+        rules.insert(1, 3);
+        rules.insert(2, 3);
+
+        assert_eq!(corrected_order(&vec![1], &rules), vec![1]);
+        assert_eq!(corrected_order(&vec![2], &rules), vec![2]);
+        assert_eq!(corrected_order(&vec![3], &rules), vec![3]);
+        assert_eq!(corrected_order(&vec![4], &rules), vec![4]);
+        assert_eq!(corrected_order(&vec![1, 2], &rules), vec![1, 2]);
+        assert_eq!(corrected_order(&vec![2, 1], &rules), vec![1, 2]);
+        assert_eq!(corrected_order(&vec![1, 2, 3], &rules), vec![1, 2, 3]);
+        assert_eq!(corrected_order(&vec![3, 2, 1], &rules), vec![1, 2, 3]);
     }
 }
