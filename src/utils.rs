@@ -1,6 +1,8 @@
 use core::str;
+use std::cmp::Eq;
 use std::collections::HashMap;
 use std::fs::File;
+use std::hash::Hash;
 use std::io::Lines;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -35,7 +37,7 @@ pub fn as_int_pairs(path: &str) -> impl Iterator<Item = (i32, i32)> {
         .map(to_2_ints)
 }
 
-pub fn freqs(v: Vec<i32>) -> HashMap<i32, i32> {
+pub fn freqs<T: Hash + Eq>(v: Vec<T>) -> HashMap<T, i32> {
     let mut freqs = HashMap::new();
     for x in v {
         freqs.entry(x).and_modify(|f| *f += 1).or_insert(1);
@@ -43,7 +45,7 @@ pub fn freqs(v: Vec<i32>) -> HashMap<i32, i32> {
     freqs
 }
 
-pub fn subsets_removing_1(v: &Vec<i32>) -> Vec<Vec<i32>> {
+pub fn subsets_removing_1<T: Clone>(v: &Vec<T>) -> Vec<Vec<T>> {
     let mut result = Vec::new();
     for i in 0..v.len() {
         let mut subset = v[0..i].to_vec();
@@ -64,15 +66,15 @@ pub fn as_matrix(path: &str) -> Vec<Vec<char>> {
         .collect()
 }
 
-pub fn flip_matrix(vv: &Vec<Vec<char>>) -> Vec<Vec<char>> {
-    let height = vv.len();
-    let width = vv[0].len();
+pub fn flip_matrix<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {
+    let height = mat.len();
+    let width = mat[0].len();
 
-    let mut flipped = vec![vec![' '; height]; width];
+    let mut flipped: Vec<Vec<T>> = vec![vec![mat[0][0]; height]; width];
 
     for h_idx in 0..height {
         for w_idx in 0..width {
-            flipped[w_idx][h_idx] = vv[h_idx][w_idx];
+            flipped[w_idx][h_idx] = mat[h_idx][w_idx];
         }
     }
     flipped
