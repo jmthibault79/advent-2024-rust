@@ -7,10 +7,10 @@ use std::io::Lines;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-pub fn line_iter(path: &str) -> Lines<BufReader<File>> {
+pub fn string_iter(path: &str) -> impl Iterator<Item = String> {
     let path = Path::new(path);
     let file = File::open(&path).expect(format!("couldn't open {}", path.display()).as_str());
-    BufReader::new(file).lines()
+    BufReader::new(file).lines().map(Result::unwrap)
 }
 
 fn to_int_vec(s: String) -> Vec<i32> {
@@ -20,7 +20,7 @@ fn to_int_vec(s: String) -> Vec<i32> {
 }
 
 pub fn as_int_vecs(path: &str) -> impl Iterator<Item = Vec<i32>> {
-    line_iter(path).map(Result::unwrap).map(to_int_vec)
+    string_iter(path).map(to_int_vec)
 }
 
 fn to_2_ints(v: Vec<i32>) -> (i32, i32) {
@@ -31,10 +31,7 @@ fn to_2_ints(v: Vec<i32>) -> (i32, i32) {
 }
 
 pub fn as_int_pairs(path: &str) -> impl Iterator<Item = (i32, i32)> {
-    line_iter(path)
-        .map(Result::unwrap)
-        .map(to_int_vec)
-        .map(to_2_ints)
+    string_iter(path).map(to_int_vec).map(to_2_ints)
 }
 
 pub fn freqs<T: Hash + Eq>(v: Vec<T>) -> HashMap<T, i32> {
@@ -60,10 +57,7 @@ fn to_char_vec(s: String) -> Vec<char> {
 }
 
 pub fn as_matrix(path: &str) -> Vec<Vec<char>> {
-    line_iter(path)
-        .map(Result::unwrap)
-        .map(to_char_vec)
-        .collect()
+    string_iter(path).map(to_char_vec).collect()
 }
 
 pub fn flip_matrix<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {

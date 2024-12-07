@@ -19,7 +19,7 @@ fn memory_result(v: Vec<String>) -> i32 {
 fn d3p1(path: &str) -> i32 {
     // I'd prefer to keep this as an iterator, but this is necessary to ensure that ownership of the Strings
     // remains outside of the iterator map step, where it would go out of scope before use
-    let owned_lines: Vec<String> = utils::line_iter(path).map(Result::unwrap).collect();
+    let owned_lines: Vec<String> = utils::string_iter(path).collect();
     memory_result(owned_lines)
 }
 
@@ -30,7 +30,7 @@ fn d3p2(path: &str) -> i32 {
     let mut enabled = true;
     let mut enabled_lines: Vec<String> = Vec::new();
 
-    utils::line_iter(path).map(Result::unwrap).for_each(|line| {
+    utils::string_iter(path).for_each(|line| {
         let mut remaining = line.as_str();
         while !remaining.is_empty() {
             if enabled {
