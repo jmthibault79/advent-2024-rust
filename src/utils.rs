@@ -3,9 +3,11 @@ use std::cmp::Eq;
 use std::collections::HashMap;
 use std::fs::File;
 use std::hash::Hash;
-use std::io::Lines;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+
+pub mod matrix;
+pub mod plane;
 
 pub fn string_iter(path: &str) -> impl Iterator<Item = String> {
     let path = Path::new(path);
@@ -50,26 +52,4 @@ pub fn subsets_removing_1<T: Clone>(v: &Vec<T>) -> Vec<Vec<T>> {
         result.push(subset);
     }
     result
-}
-
-fn to_char_vec(s: String) -> Vec<char> {
-    s.chars().collect()
-}
-
-pub fn as_matrix(path: &str) -> Vec<Vec<char>> {
-    string_iter(path).map(to_char_vec).collect()
-}
-
-pub fn flip_matrix<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {
-    let height = mat.len();
-    let width = mat[0].len();
-
-    let mut flipped: Vec<Vec<T>> = vec![vec![mat[0][0]; height]; width];
-
-    for h_idx in 0..height {
-        for w_idx in 0..width {
-            flipped[w_idx][h_idx] = mat[h_idx][w_idx];
-        }
-    }
-    flipped
 }
