@@ -36,33 +36,24 @@ fn move_one(
     col_count: usize,
     dir: Direction,
 ) -> MovingObject {
-    let out_of_bounds = match dir {
-        Direction::Up => row == 0,
-        Direction::Down => row == row_count - 1,
-        Direction::Left => col == 0,
-        Direction::Right => col == col_count - 1,
+    let (out_of_bounds, new_row, new_col) = match (dir, row, col) {
+        // out of bounds
+        (Direction::Up, r, _) if r == 0 => (true, row, col),
+        (Direction::Down, r, _) if r == row_count - 1 => (true, row, col),
+        (Direction::Left, _, c) if c == 0 => (true, row, col),
+        (Direction::Right, _, c) if c == col_count - 1 => (true, row, col),
+        // normal movement
+        (Direction::Up, _, _) => (false, row - 1, col),
+        (Direction::Down, _, _) => (false, row + 1, col),
+        (Direction::Left, _, _) => (false, row, col - 1),
+        (Direction::Right, _, _) => (false, row, col + 1),
     };
 
-    if out_of_bounds {
-        MovingObject {
-            row,
-            col,
-            dir,
-            out_of_bounds,
-        }
-    } else {
-        let (r, c) = match dir {
-            Direction::Up => (row - 1, col),
-            Direction::Down => (row + 1, col),
-            Direction::Left => (row, col - 1),
-            Direction::Right => (row, col + 1),
-        };
-        MovingObject {
-            row: r,
-            col: c,
-            dir,
-            out_of_bounds,
-        }
+    MovingObject {
+        row: new_row,
+        col: new_col,
+        dir,
+        out_of_bounds,
     }
 }
 
