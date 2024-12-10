@@ -34,59 +34,35 @@ fn move_one(
     col: usize,
     row_count: usize,
     col_count: usize,
-    direction: &Direction,
+    dir: Direction,
 ) -> MovingObject {
-    match (direction, row, col) {
-        // handle out of bounds first
-        (Direction::Up, r, c) if r == 0 => MovingObject {
+    let out_of_bounds = match dir {
+        Direction::Up => row == 0,
+        Direction::Down => row == row_count - 1,
+        Direction::Left => col == 0,
+        Direction::Right => col == col_count - 1,
+    };
+
+    if out_of_bounds {
+        MovingObject {
+            row,
+            col,
+            dir,
+            out_of_bounds,
+        }
+    } else {
+        let (r, c) = match dir {
+            Direction::Up => (row - 1, col),
+            Direction::Down => (row + 1, col),
+            Direction::Left => (row, col - 1),
+            Direction::Right => (row, col + 1),
+        };
+        MovingObject {
             row: r,
             col: c,
-            dir: Direction::Up,
-            out_of_bounds: true,
-        },
-        (Direction::Down, r, c) if r == row_count - 1 => MovingObject {
-            row: r,
-            col: c,
-            dir: Direction::Down,
-            out_of_bounds: true,
-        },
-        (Direction::Left, r, c) if c == 0 => MovingObject {
-            row: r,
-            col: c,
-            dir: Direction::Left,
-            out_of_bounds: true,
-        },
-        (Direction::Right, r, c) if c == col_count - 1 => MovingObject {
-            row: r,
-            col: c,
-            dir: Direction::Right,
-            out_of_bounds: true,
-        },
-        // handle normal movement
-        (Direction::Up, r, c) => MovingObject {
-            row: r - 1,
-            col: c,
-            dir: Direction::Up,
-            out_of_bounds: false,
-        },
-        (Direction::Down, r, c) => MovingObject {
-            row: r + 1,
-            col: c,
-            dir: Direction::Down,
-            out_of_bounds: false,
-        },
-        (Direction::Left, r, c) => MovingObject {
-            row: r,
-            col: c - 1,
-            dir: Direction::Left,
-            out_of_bounds: false,
-        },
-        (Direction::Right, r, c) => MovingObject {
-            row: r,
-            col: c + 1,
-            dir: Direction::Right,
-            out_of_bounds: false,
-        },
+            dir,
+            out_of_bounds,
+        }
     }
 }
 
@@ -96,7 +72,7 @@ fn obstacle_ahead(plane: &Vec<Vec<char>>, obstacles: &Vec<char>, me: &MovingObje
         col,
         dir: _,
         out_of_bounds,
-    } = move_one(me.row, me.col, plane.len(), plane[0].len(), &me.dir);
+    } = move_one(me.row, me.col, plane.len(), plane[0].len(), me.dir);
     !out_of_bounds && obstacles.contains(&plane[row][col])
 }
 
@@ -118,17 +94,11 @@ fn move_forward_or_turn_right(
             start.col,
             plane.len(),
             plane[0].len(),
-            &right_90_degrees,
+            right_90_degrees,
         )
     } else {
         // go straight
-        move_one(
-            start.row,
-            start.col,
-            plane.len(),
-            plane[0].len(),
-            &start.dir,
-        )
+        move_one(start.row, start.col, plane.len(), plane[0].len(), start.dir)
     }
 }
 
@@ -172,7 +142,7 @@ mod tests {
 
         // move one, valid
         assert_eq!(
-            move_one(0, 0, 2, 2, &Direction::Right),
+            move_one(0, 0, 2, 2, Direction::Right),
             MovingObject {
                 row: 0,
                 col: 1,
@@ -181,7 +151,7 @@ mod tests {
             }
         );
         assert_eq!(
-            move_one(0, 0, 2, 2, &Direction::Down),
+            move_one(0, 0, 2, 2, Direction::Down),
             MovingObject {
                 row: 1,
                 col: 0,
@@ -191,7 +161,7 @@ mod tests {
             }
         );
         assert_eq!(
-            move_one(1, 1, 2, 2, &Direction::Up),
+            move_one(1, 1, 2, 2, Direction::Up),
             MovingObject {
                 row: 0,
                 col: 1,
@@ -200,7 +170,7 @@ mod tests {
             }
         );
         assert_eq!(
-            move_one(1, 1, 2, 2, &Direction::Left),
+            move_one(1, 1, 2, 2, Direction::Left),
             MovingObject {
                 row: 1,
                 col: 0,
@@ -211,7 +181,7 @@ mod tests {
 
         // move one, invalid
         assert_eq!(
-            move_one(0, 0, 2, 2, &Direction::Left),
+            move_one(0, 0, 2, 2, Direction::Left),
             MovingObject {
                 row: 0,
                 col: 0,
@@ -220,7 +190,7 @@ mod tests {
             }
         );
         assert_eq!(
-            move_one(0, 0, 2, 2, &Direction::Up),
+            move_one(0, 0, 2, 2, Direction::Up),
             MovingObject {
                 row: 0,
                 col: 0,
@@ -229,7 +199,7 @@ mod tests {
             }
         );
         assert_eq!(
-            move_one(1, 1, 2, 2, &Direction::Down),
+            move_one(1, 1, 2, 2, Direction::Down),
             MovingObject {
                 row: 1,
                 col: 1,
@@ -238,7 +208,7 @@ mod tests {
             }
         );
         assert_eq!(
-            move_one(1, 1, 2, 2, &Direction::Right),
+            move_one(1, 1, 2, 2, Direction::Right),
             MovingObject {
                 row: 1,
                 col: 1,
