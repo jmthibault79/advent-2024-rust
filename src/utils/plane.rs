@@ -72,25 +72,18 @@ fn move_forward_or_turn_right(
     obstacles: &Vec<char>,
     start: &MovingObject,
 ) -> MovingObject {
-    if obstacle_ahead(plane, &obstacles, &start) {
-        // turn right
-        let right_90_degrees: Direction = match start.dir {
+    let direction = if obstacle_ahead(plane, &obstacles, &start) {
+        match start.dir {
             Direction::Up => Direction::Right,
             Direction::Right => Direction::Down,
             Direction::Down => Direction::Left,
             Direction::Left => Direction::Up,
-        };
-        move_one(
-            start.row,
-            start.col,
-            plane.len(),
-            plane[0].len(),
-            right_90_degrees,
-        )
+        }
     } else {
-        // go straight
-        move_one(start.row, start.col, plane.len(), plane[0].len(), start.dir)
-    }
+        start.dir
+    };
+
+    move_one(start.row, start.col, plane.len(), plane[0].len(), direction)
 }
 
 // generate the path to the exit, turning right when an obstacle is hit
