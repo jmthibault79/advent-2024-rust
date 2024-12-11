@@ -24,13 +24,44 @@ fn find_guard(plane: &Vec<Vec<char>>) -> plane::MovingObject {
 fn d6p1(file_path: &str) -> usize {
     let plane = matrix::as_matrix(file_path);
     let guard = find_guard(&plane);
-    let path_to_exit = plane::path_to_exit_turning_right(&plane, &vec![OBSTACLE], &guard);
-    let unique_spaces = plane::unique_spaces(&path_to_exit);
-    unique_spaces.len()
+    if let Some(path_to_exit) = plane::path_to_exit_turning_right(&plane, &vec![OBSTACLE], &guard) {
+        let unique_spaces = plane::unique_spaces(&path_to_exit);
+        unique_spaces.len()
+    } else {
+        0
+    }
 }
 
-fn d6p2(path: &str) -> usize {
-    0
+fn d6p2(file_path: &str) -> usize {
+    const NEW_OBSTACLE: char = 'O';
+
+    let plane = matrix::as_matrix(file_path);
+    let guard = find_guard(&plane);
+    let alt_planes = matrix::replace_one_cell(&plane, NEW_OBSTACLE);
+    println!("Alt planes: {:?}", alt_planes.len());
+    alt_planes
+        .iter()
+        .enumerate()
+        .map(|(idx, alt_plane)| {
+            if idx % 100 == 0 {
+                println!("Alt plane: {}", idx);
+            }
+            match plane::path_to_exit_turning_right(
+                &alt_plane,
+                &vec![OBSTACLE, NEW_OBSTACLE],
+                &guard,
+            ) {
+                None => {
+                    // println!("Loop found");
+                    // matrix::pretty_print(alt_plane);
+                    // println!();
+                    1
+                }
+                _ => 0,
+            }
+        })
+        .sum()
+    // 1792 is too low!
 }
 
 pub fn d6() {
@@ -40,26 +71,4 @@ pub fn d6() {
     println!("Result Day 6 Part 1: {}", result);
     result = d6p2(path);
     println!("Result Day 6 Part 2: {}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn move_one_test() {
-        // 2x2 map
-
-        // // move one, valid
-        // assert_eq!(move_one(0, 0, 2, 2, Direction::Right), (0, 1, None));
-        // assert_eq!(move_one(0, 0, 2, 2, Direction::Down), (1, 0, None));
-        // assert_eq!(move_one(1, 1, 2, 2, Direction::Up), (0, 1, None));
-        // assert_eq!(move_one(1, 1, 2, 2, Direction::Left), (1, 0, None));
-
-        // // move one, invalid
-        // assert_eq!(move_one(0, 0, 2, 2, Direction::Left), (0, 0, Some(Direction::Left)));
-        // assert_eq!(move_one(0, 0, 2, 2, Direction::Up), (0, 0, Some(Direction::Up)));
-        // assert_eq!(move_one(1, 1, 2, 2, Direction::Down), (1, 1, Some(Direction::Down)));
-        // assert_eq!(move_one(1, 1, 2, 2, Direction::Right), (1, 1, Some(Direction::Right)));
-    }
 }

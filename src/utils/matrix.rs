@@ -1,4 +1,5 @@
 use super::string_iter;
+use std::fmt::Display;
 
 fn to_char_vec(s: String) -> Vec<char> {
     s.chars().collect()
@@ -20,4 +21,26 @@ pub fn flip_matrix<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {
         }
     }
     flipped
+}
+
+// return NxM new matrices, with the same values as the original except a single value is replaced with a new value
+pub fn replace_one_cell<T: Copy>(mat: &Vec<Vec<T>>, new_val: T) -> Vec<Vec<Vec<T>>> {
+    let mut result = Vec::new();
+    for (row_idx, row) in mat.iter().enumerate() {
+        for (col_idx, _) in row.iter().enumerate() {
+            let mut new_mat = mat.clone();
+            new_mat[row_idx][col_idx] = new_val;
+            result.push(new_mat);
+        }
+    }
+    result
+}
+
+pub fn pretty_print<T: Display>(mat: &Vec<Vec<T>>) {
+    for row in mat {
+        for cell in row {
+            print!("{}", cell);
+        }
+        println!();
+    }
 }

@@ -72,26 +72,35 @@ fn move_forward_or_turn_right(
     obstacles: &Vec<char>,
     start: &MovingObject,
 ) -> MovingObject {
-    let direction = if obstacle_ahead(plane, &obstacles, &start) {
-        match start.dir {
+    if obstacle_ahead(plane, &obstacles, &start) {
+        let new_dir = match start.dir {
             Direction::Up => Direction::Right,
             Direction::Right => Direction::Down,
             Direction::Down => Direction::Left,
             Direction::Left => Direction::Up,
-        }
+        };
+        move_forward_or_turn_right(
+            plane,
+            obstacles,
+            &MovingObject {
+                row: start.row,
+                col: start.col,
+                dir: new_dir,
+                out_of_bounds: false,
+            },
+        )
     } else {
-        start.dir
-    };
-
-    move_one(start.row, start.col, plane.len(), plane[0].len(), direction)
+        move_one(start.row, start.col, plane.len(), plane[0].len(), start.dir)
+    }
 }
 
 // generate the path to the exit, turning right when an obstacle is hit
+// return None if a loop is detected
 pub fn path_to_exit_turning_right(
     plane: &Vec<Vec<char>>,
     obstacles: &Vec<char>,
     start: &MovingObject,
-) -> Vec<MovingObject> {
+) -> Option<Vec<MovingObject>> {
     let mut path = vec![start.clone()];
     let mut current = start.clone();
 
@@ -100,10 +109,15 @@ pub fn path_to_exit_turning_right(
         if current.out_of_bounds {
             break;
         } else {
-            path.push(current.clone());
+            // check for a loop if the length is above a threshold
+            if path.len() > 5000 && path.contains(&current) {
+                return None;
+            } else {
+                path.push(current.clone());
+            }
         }
     }
-    path
+    Some(path)
 }
 
 pub fn unique_spaces(path: &Vec<MovingObject>) -> Vec<(usize, usize)> {
@@ -347,7 +361,7 @@ mod tests {
 
         assert_eq!(
             path_to_exit_turning_right(&plane, &obstacles, &start),
-            expected_path
+            Some(expected_path)
         );
 
         start = MovingObject {
@@ -373,22 +387,8 @@ mod tests {
 
         assert_eq!(
             path_to_exit_turning_right(&plane, &obstacles, &start),
-            expected_path
+            Some(expected_path)
         );
-
-        plane = vec![vec!['.', '.'], vec!['x', '.']];
-        start = MovingObject {
-            row: 0,
-            col: 0,
-            dir: Direction::Down,
-            out_of_bounds: false,
-        };
-        expected_path = vec![MovingObject {
-            row: 0,
-            col: 0,
-            dir: Direction::Down,
-            out_of_bounds: false,
-        }];
 
         plane = vec![
             vec!['x', '.', '.'],
@@ -427,6 +427,11 @@ mod tests {
                 out_of_bounds: false,
             },
         ];
+
+        assert_eq!(
+            path_to_exit_turning_right(&plane, &obstacles, &start),
+            Some(expected_path)
+        );
     }
 
     #[test]
@@ -454,5 +459,25 @@ mod tests {
 
         let expected = vec![(0, 0), (0, 1)];
         assert_eq!(unique_spaces(&path), expected);
+    }
+
+    #[test]
+    fn path_right_loop_test() {
+        let obstacles = vec!['x'];
+
+        let plane = vec![
+            vec!['.', 'x', '.', '.'],
+            vec!['.', '.', '.', 'x'],
+            vec!['x', '.', '.', '.'],
+            vec!['.', '.', 'x', '.'],
+        ];
+        let start = MovingObject {
+            row: 1,
+            col: 0,
+            dir: Direction::Right,
+            out_of_bounds: false,
+        };
+
+        assert_eq!(path_to_exit_turning_right(&plane, &obstacles, &start), None);
     }
 }
