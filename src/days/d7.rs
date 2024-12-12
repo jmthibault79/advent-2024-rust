@@ -1,5 +1,12 @@
 use crate::utils;
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum Operation {
+    Add,
+    Multiply,
+    Concatenate,
+}
+
 fn parse(input: String) -> (u64, Vec<u64>) {
     let mut iter = input.split(':');
 
@@ -22,45 +29,74 @@ fn parse(input: String) -> (u64, Vec<u64>) {
     (desired_result, operands)
 }
 
-// for operands.len() = 3, combinations are 00 (a+b+c), 01 (a+b*c), 10 (a*b+c), 11 (a*b*c)
-fn result2(combination: u32, operands: &Vec<u64>) -> u64 {
-    if combination == 0 {
-        operands[0] + operands[1]
-    } else {
-        operands[0] * operands[1]
+fn result2(operation: &Operation, a: u64, b: u64) -> u64 {
+    match operation {
+        Operation::Add => a + b,
+        Operation::Multiply => a * b,
+        Operation::Concatenate => {
+            let b_digits = b.ilog10() + 1;
+            a * 10_u64.pow(b_digits) + b
+        }
     }
 }
 
-fn result(combination: u32, operands: &Vec<u64>) -> u64 {
-    if operands.len() == 2 {
-        result2(combination, operands)
-    } else {
-        let bit_count = operands.len() - 1;
-        let high_bit_mask = 2_u32.pow(bit_count as u32 - 1);
-        let low_bit_mask = high_bit_mask - 1;
-        let high_bit = (combination & high_bit_mask) >> (bit_count - 1);
-        let low_bits = combination & low_bit_mask;
-        let first_two_result = if high_bit == 0 {
-            operands[0] + operands[1]
-        } else {
-            operands[0] * operands[1]
-        };
+fn result(operations: &[Operation], operands: &Vec<u64>) -> u64 {
+    if operations.len() + 1 != operands.len() {
+        panic!("Invalid number of operations");
+    }
 
+    let first_two_result = result2(&operations[0], operands[0], operands[1]);
+    if operands.len() == 2 {
+        first_two_result
+    } else {
         let mut new_vec = vec![first_two_result];
         new_vec.extend_from_slice(&operands[2..]);
 
-        result(low_bits, &new_vec)
+        result(&operations[1..], &new_vec)
     }
 }
 
-fn has_solution((desired_result, operands): &(u64, Vec<u64>)) -> bool {
+fn generate_combinations(n: usize, use_concatenation: bool) -> Vec<Vec<Operation>> {
+    match (n, use_concatenation) {
+        (1, false) => vec![vec![Operation::Add], vec![Operation::Multiply]],
+        (1, true) => vec![
+            vec![Operation::Add],
+            vec![Operation::Multiply],
+            vec![Operation::Concatenate],
+        ],
+        _ => {
+            let mut result = Vec::new();
+            generate_combinations(n - 1, use_concatenation)
+                .iter_mut()
+                .for_each(|subcombo| {
+                    let (mut with_add, mut with_mul) = (subcombo.clone(), subcombo.clone());
+                    with_add.push(Operation::Add);
+                    with_mul.push(Operation::Multiply);
+                    result.push(with_add);
+                    result.push(with_mul);
+                    if use_concatenation {
+                        let mut with_concat = subcombo.clone();
+                        with_concat.push(Operation::Concatenate);
+                        result.push(with_concat);
+                    }
+                });
+            result
+        }
+    }
+}
+
+fn has_solution(desired_result: &u64, operands: &Vec<u64>, use_concatenation: bool) -> bool {
     match operands.len() {
         n if n < 2 => false,
-        //        2 => has_solution_2(desired_result, operands[0], operands[1]),
         _ => {
-            let combinations = 2_u32.pow(operands.len() as u32 - 1);
-            for combo in 0..combinations {
-                if *desired_result == result(combo, &operands) {
+            let operation_combinations =
+                generate_combinations(operands.len() - 1, use_concatenation);
+            for operations in operation_combinations {
+                if *desired_result == result(&operations, &operands) {
+                    // println!(
+                    //     "Found solution: {} = {:?} using operations: {:?}",
+                    //     desired_result, operands, operations
+                    // );
                     return true;
                 }
             }
@@ -72,13 +108,17 @@ fn has_solution((desired_result, operands): &(u64, Vec<u64>)) -> bool {
 pub fn d7p1(file_path: &str) -> u64 {
     utils::string_iter(file_path)
         .map(parse)
-        .filter(has_solution)
+        .filter(|(desired, operands)| has_solution(desired, operands, false))
         .map(|(desired, _)| desired)
         .sum()
 }
 
 pub fn d7p2(file_path: &str) -> u64 {
-    0
+    utils::string_iter(file_path)
+        .map(parse)
+        .filter(|(desired, operands)| has_solution(desired, operands, true))
+        .map(|(desired, _)| desired)
+        .sum()
 }
 
 pub fn d7() {
@@ -95,20 +135,101 @@ mod tests {
 
     #[test]
     fn result_2_test() {
-        assert_eq!(result2(0, &vec![2, 3]), 5);
-        assert_eq!(result2(1, &vec![2, 3]), 6);
+        assert_eq!(result2(&Operation::Add, 2, 3), 5);
+        assert_eq!(result2(&Operation::Multiply, 2, 3), 6);
+        assert_eq!(result2(&Operation::Concatenate, 2, 3), 23);
+        assert_eq!(result2(&Operation::Concatenate, 123, 456), 123456);
+    }
+
+    #[test]
+    fn gen_combos_test() {
+        assert_eq!(
+            generate_combinations(1, false),
+            vec![vec![Operation::Add], vec![Operation::Multiply]]
+        );
+        assert_eq!(
+            generate_combinations(2, false).sort(),
+            vec![
+                vec![Operation::Add, Operation::Add],
+                vec![Operation::Add, Operation::Multiply],
+                vec![Operation::Multiply, Operation::Add],
+                vec![Operation::Multiply, Operation::Multiply],
+            ]
+            .sort()
+        );
     }
 
     #[test]
     fn result_test() {
-        assert_eq!(result(0, &vec![2, 3]), 2 + 3);
-        assert_eq!(result(1, &vec![2, 3]), 2 * 3);
-        assert_eq!(result(0b00, &vec![2, 3, 4]), 2 + 3 + 4);
-        assert_eq!(result(0b01, &vec![2, 3, 4]), (2 + 3) * 4);
-        assert_eq!(result(0b10, &vec![2, 3, 4]), 2 * 3 + 4);
-        assert_eq!(result(0b11, &vec![2, 3, 4]), 2 * 3 * 4);
-        assert_eq!(result(0b000, &vec![2, 3, 4, 5]), 2 + 3 + 4 + 5);
-        assert_eq!(result(0b101, &vec![2, 3, 4, 5]), (2 * 3 + 4) * 5);
-        assert_eq!(result(0b111, &vec![2, 3, 4, 5]), 2 * 3 * 4 * 5);
+        assert_eq!(result(&vec![Operation::Add], &vec![2, 3]), 2 + 3);
+        assert_eq!(result(&vec![Operation::Multiply], &vec![2, 3]), 2 * 3);
+
+        assert_eq!(
+            result(&vec![Operation::Add, Operation::Add], &vec![2, 3, 4]),
+            2 + 3 + 4
+        );
+        assert_eq!(
+            result(&vec![Operation::Add, Operation::Multiply], &vec![2, 3, 4]),
+            (2 + 3) * 4
+        );
+        assert_eq!(
+            result(&vec![Operation::Multiply, Operation::Add], &vec![2, 3, 4]),
+            2 * 3 + 4
+        );
+        assert_eq!(
+            result(
+                &vec![Operation::Multiply, Operation::Multiply],
+                &vec![2, 3, 4]
+            ),
+            2 * 3 * 4
+        );
+
+        assert_eq!(
+            result(
+                &vec![Operation::Concatenate, Operation::Concatenate],
+                &vec![2, 3, 4]
+            ),
+            234
+        );
+        assert_eq!(
+            result(
+                &vec![Operation::Add, Operation::Concatenate],
+                &vec![2, 3, 4]
+            ),
+            54
+        );
+        assert_eq!(
+            result(
+                &vec![Operation::Concatenate, Operation::Add],
+                &vec![2, 3, 4]
+            ),
+            23 + 4
+        );
+
+        assert_eq!(
+            result(
+                &vec![Operation::Add, Operation::Add, Operation::Add],
+                &vec![2, 3, 4, 5]
+            ),
+            2 + 3 + 4 + 5
+        );
+        assert_eq!(
+            result(
+                &vec![Operation::Multiply, Operation::Add, Operation::Multiply],
+                &vec![2, 3, 4, 5]
+            ),
+            (2 * 3 + 4) * 5
+        );
+        assert_eq!(
+            result(
+                &vec![
+                    Operation::Multiply,
+                    Operation::Multiply,
+                    Operation::Multiply
+                ],
+                &vec![2, 3, 4, 5]
+            ),
+            2 * 3 * 4 * 5
+        );
     }
 }
