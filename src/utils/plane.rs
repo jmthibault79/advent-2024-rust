@@ -9,23 +9,12 @@ pub enum Direction {
     Right,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct MovingObject {
     pub row: usize,
     pub col: usize,
     pub dir: Direction,
     pub out_of_bounds: bool,
-}
-
-impl Clone for MovingObject {
-    fn clone(&self) -> MovingObject {
-        MovingObject {
-            row: self.row,
-            col: self.col,
-            dir: self.dir.clone(),
-            out_of_bounds: self.out_of_bounds,
-        }
-    }
 }
 
 // result is dest_row, dest_col, Some(direction if out of bounds)

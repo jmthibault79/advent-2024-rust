@@ -53,3 +53,27 @@ pub fn subsets_removing_1<T: Clone>(v: &Vec<T>) -> Vec<Vec<T>> {
     }
     result
 }
+
+pub fn all_pairs<T: Clone>(v: &Vec<T>) -> Vec<(T, T)> {
+    let mut result = Vec::new();
+    for i in 0..v.len() {
+        for j in i + 1..v.len() {
+            result.push((v[i].clone(), v[j].clone()));
+        }
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_pairs_test() {
+        assert_eq!(all_pairs(&vec!['a', 'b']), vec![('a', 'b')]);
+        assert_eq!(
+            all_pairs(&vec!['a', 'b', 'c']).sort(),
+            vec![('a', 'b'), ('b', 'c'), ('a', 'c')].sort()
+        );
+    }
+}

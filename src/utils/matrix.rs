@@ -44,3 +44,13 @@ pub fn pretty_print<T: Display>(mat: &Vec<Vec<T>>) {
         println!();
     }
 }
+
+pub fn unique_coordinates(mat: &Vec<(usize, usize)>) -> Vec<(usize, usize)> {
+    let mut unique = vec![];
+    for coord in mat {
+        if !unique.contains(coord) {
+            unique.push(*coord);
+        }
+    }
+    unique
+}
