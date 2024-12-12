@@ -70,6 +70,7 @@ mod tests {
 
     #[test]
     fn all_pairs_test() {
+        assert_eq!(all_pairs(&vec!['a']), vec![]);
         assert_eq!(all_pairs(&vec!['a', 'b']), vec![('a', 'b')]);
         assert_eq!(
             all_pairs(&vec!['a', 'b', 'c']).sort(),

@@ -54,3 +54,11 @@ pub fn unique_coordinates(mat: &Vec<(usize, usize)>) -> Vec<(usize, usize)> {
     }
     unique
 }
+
+pub fn in_bounds(row_count: usize, col_count: usize, row: isize, col: isize) -> bool {
+    row >= 0 && row < row_count as isize && col >= 0 && col < col_count as isize
+}
+
+pub fn in_bounds_m<T>(mat: &Vec<Vec<T>>, row: isize, col: isize) -> bool {
+    in_bounds(mat.len(), mat[0].len(), row, col)
+}
