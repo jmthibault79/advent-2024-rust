@@ -1,7 +1,7 @@
 use core::str;
 use std::cmp::Eq;
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{self, File};
 use std::hash::Hash;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -13,6 +13,10 @@ pub fn string_iter(path: &str) -> impl Iterator<Item = String> {
     let path = Path::new(path);
     let file = File::open(&path).expect(format!("couldn't open {}", path.display()).as_str());
     BufReader::new(file).lines().map(Result::unwrap)
+}
+
+pub fn read_all(path: &str) -> String {
+    fs::read_to_string(path).expect(format!("Could not read file {}", path).as_str())
 }
 
 fn to_int_vec(s: String) -> Vec<i32> {
