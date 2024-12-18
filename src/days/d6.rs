@@ -22,7 +22,7 @@ fn find_guard(plane: &Vec<Vec<char>>) -> plane::MovingObject {
 }
 
 fn d6p1(file_path: &str) -> usize {
-    let plane = matrix::as_matrix(file_path);
+    let plane = matrix::as_char_matrix(file_path);
     let guard = find_guard(&plane);
     if let Some(path_to_exit) = plane::path_to_exit_turning_right(&plane, &vec![OBSTACLE], &guard) {
         let unique_spaces = plane::unique_spaces(&path_to_exit);
@@ -35,7 +35,7 @@ fn d6p1(file_path: &str) -> usize {
 fn d6p2(file_path: &str) -> usize {
     const NEW_OBSTACLE: char = 'O';
 
-    let plane = matrix::as_matrix(file_path);
+    let plane = matrix::as_char_matrix(file_path);
     let guard = find_guard(&plane);
     let alt_planes = matrix::replace_one_cell(&plane, NEW_OBSTACLE);
     println!("Alt planes: {:?}", alt_planes.len());

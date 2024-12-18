@@ -70,7 +70,7 @@ pub fn calc_all_antinodes(
 }
 
 pub fn d8p1(file_path: &str) -> usize {
-    let mat = matrix::as_matrix(file_path);
+    let mat = matrix::as_char_matrix(file_path);
     let antennas = parse_antennas(&mat);
     let antinodes: Vec<(usize, usize)> = antennas
         .iter_all()
@@ -81,7 +81,7 @@ pub fn d8p1(file_path: &str) -> usize {
 }
 
 pub fn d8p2(file_path: &str) -> usize {
-    let mat = matrix::as_matrix(file_path);
+    let mat = matrix::as_char_matrix(file_path);
     let antennas = parse_antennas(&mat);
     let antinodes: Vec<(usize, usize)> = antennas
         .iter_all()

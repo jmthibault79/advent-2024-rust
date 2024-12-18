@@ -18,7 +18,7 @@ pub struct MovingObject {
 }
 
 // result is dest_row, dest_col, Some(direction if out of bounds)
-fn move_one(
+pub fn move_one(
     row: usize,
     col: usize,
     row_count: usize,

@@ -13,3 +13,13 @@ pub fn dX() {
     result = dXp2(file_path);
     println!("Result Day X Part 2: {}", result);
 }
+
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert!(false);
+    }
+}

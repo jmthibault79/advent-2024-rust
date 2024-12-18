@@ -19,28 +19,29 @@ pub fn read_all(path: &str) -> String {
     fs::read_to_string(path).expect(format!("Could not read file {}", path).as_str())
 }
 
-fn to_int_vec(s: String) -> Vec<i32> {
-    s.split_whitespace()
-        .map(|x| x.parse().expect("integer expected"))
+fn to_int_vec(s: String) -> Vec<u32> {
+    s.chars()
+        .map(|s| s.to_digit(10))
+        .map(|s| s.expect("integer expected"))
         .collect()
 }
 
-pub fn as_int_vecs(path: &str) -> impl Iterator<Item = Vec<i32>> {
+pub fn as_int_vecs(path: &str) -> impl Iterator<Item = Vec<u32>> {
     string_iter(path).map(to_int_vec)
 }
 
-fn to_2_ints(v: Vec<i32>) -> (i32, i32) {
+fn to_2_ints(v: Vec<u32>) -> (u32, u32) {
     if v.len() != 2 {
         panic!("Expected 2 integers per line, got {}", v.len());
     }
     (v[0], v[1])
 }
 
-pub fn as_int_pairs(path: &str) -> impl Iterator<Item = (i32, i32)> {
+pub fn as_int_pairs(path: &str) -> impl Iterator<Item = (u32, u32)> {
     string_iter(path).map(to_int_vec).map(to_2_ints)
 }
 
-pub fn freqs<T: Hash + Eq>(v: Vec<T>) -> HashMap<T, i32> {
+pub fn freqs<T: Hash + Eq>(v: Vec<T>) -> HashMap<T, u32> {
     let mut freqs = HashMap::new();
     for x in v {
         freqs.entry(x).and_modify(|f| *f += 1).or_insert(1);

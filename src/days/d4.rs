@@ -67,7 +67,7 @@ fn diagonal_matrix_scan(mat: &Vec<Vec<char>>, to_scan: &str) -> i32 {
 fn d4p1(path: &str) -> i32 {
     let scan_pattern = "XMAS";
 
-    let mut mat = utils::matrix::as_matrix(path);
+    let mut mat = utils::matrix::as_char_matrix(path);
     let mut count: i32 = 0;
 
     count += mat
@@ -139,7 +139,7 @@ fn count_xmases(mat: &Vec<Vec<char>>) -> i32 {
 }
 
 fn d4p2(path: &str) -> i32 {
-    let mat = utils::matrix::as_matrix(path);
+    let mat = utils::matrix::as_char_matrix(path);
     count_xmases(&mat)
 }
 

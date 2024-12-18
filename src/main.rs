@@ -4,8 +4,8 @@ mod days;
 mod utils;
 
 fn main() {
-    //days::d1::d1();
-    //days::d2::d2();
+    //days::d1::d1(); // check up on this
+    //days::d2::d2(); // check up on this
     //days::d3::d3();
     //days::d4::d4();
     //days::d5::d5();

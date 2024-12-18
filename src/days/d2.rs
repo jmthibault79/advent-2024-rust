@@ -1,18 +1,18 @@
 use crate::utils;
 
 // safe means monotonically increasing or decreasing and only differing by 1 to 3
-fn d2p1_is_safe(v: &Vec<i32>) -> bool {
+fn d2p1_is_safe(v: &Vec<u32>) -> bool {
     let (first, second) = (v[0], v[1]);
-    let direction = match second - first {
+    let direction: i32 = match second - first {
         0 => return false,
-        x if x > 3 || x < -3 => return false,
+        x if x > 3 || (x as i32) < -3 => return false,
         x if x > 0 => 1,
         _ => -1,
     };
 
     let mut prev = v[1];
     for val in v[2..].iter() {
-        let diff = val - prev;
+        let diff = (val - prev) as i32;
 
         // if a switch in direction (or equality) is detected, return false
         if diff * direction <= 0 {
@@ -38,7 +38,7 @@ pub fn d2p1(path: &str) -> i32 {
 // for part 2, more lenient version of safe:
 // part 1 safe -> safe
 // part 1 safe if we remove a value (any) -> safe
-fn d2p2_is_safe(v: &Vec<i32>) -> bool {
+fn d2p2_is_safe(v: &Vec<u32>) -> bool {
     d2p1_is_safe(v) || utils::subsets_removing_1(v).iter().any(d2p1_is_safe)
 }
 
