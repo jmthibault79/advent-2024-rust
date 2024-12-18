@@ -8,8 +8,23 @@ pub fn as_char_matrix(path: &str) -> Vec<Vec<char>> {
     super::string_iter(path).map(to_char_vec).collect()
 }
 
+fn to_int_vec(s: String) -> Vec<u32> {
+    if s.is_empty() {
+        vec![]
+    } else {
+        s.chars()
+            .map(|s| {
+                println!("s: {}", s);
+
+                s.to_digit(10)
+            })
+            .map(|s| s.expect("integer expected"))
+            .collect()
+    }
+}
+
 pub fn as_int_matrix(path: &str) -> Vec<Vec<u32>> {
-    super::string_iter(path).map(super::to_int_vec).collect()
+    super::string_iter(path).map(to_int_vec).collect()
 }
 
 pub fn flip_matrix<T: Copy>(mat: &Vec<Vec<T>>) -> Vec<Vec<T>> {

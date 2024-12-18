@@ -2,17 +2,17 @@ use crate::utils;
 
 // safe means monotonically increasing or decreasing and only differing by 1 to 3
 fn d2p1_is_safe(v: &Vec<u32>) -> bool {
-    let (first, second) = (v[0], v[1]);
-    let direction: i32 = match second - first {
+    let (first, second) = (v[0] as i32, v[1] as i32);
+    let direction= match second - first {
         0 => return false,
-        x if x > 3 || (x as i32) < -3 => return false,
+        x if x > 3 || x < -3 => return false,
         x if x > 0 => 1,
         _ => -1,
     };
 
     let mut prev = v[1];
     for val in v[2..].iter() {
-        let diff = (val - prev) as i32;
+        let diff = *val as i32 - prev as i32;
 
         // if a switch in direction (or equality) is detected, return false
         if diff * direction <= 0 {
@@ -31,7 +31,7 @@ fn d2p1_is_safe(v: &Vec<u32>) -> bool {
 
 // count the number of "safe" rows
 pub fn d2p1(path: &str) -> i32 {
-    let input = utils::as_int_vecs(path);
+    let input = utils::as_spaced_int_vec(path);
     input.filter(d2p1_is_safe).count() as i32
 }
 
@@ -45,7 +45,7 @@ fn d2p2_is_safe(v: &Vec<u32>) -> bool {
 // count the number of "safe" rows
 // if you allow removing one value to make the row safe
 pub fn d2p2(path: &str) -> i32 {
-    let input = utils::as_int_vecs(path);
+    let input = utils::as_spaced_int_vec(path);
     input.filter(d2p2_is_safe).count() as i32
 }
 
