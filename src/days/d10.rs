@@ -2,46 +2,6 @@ use crate::utils;
 use crate::utils::matrix;
 use crate::utils::plane;
 
-// pub fn paths_forward(
-//     plane: &Vec<Vec<u32>>,
-//     target: u32,
-//     start_row: usize,
-//     start_col: usize,
-// ) -> Vec<Vec<(usize, usize)>> {
-//     let curr_val = plane[start_row][start_col];
-//     println!("{} @ ({},{})", curr_val, start_row, start_col);
-
-//     [
-//         plane::Direction::Down,
-//         plane::Direction::Up,
-//         plane::Direction::Left,
-//         plane::Direction::Right,
-//     ]
-//     .iter()
-//     .flat_map(|d| {
-//         let mo = plane::move_one(start_row, start_col, plane.len(), plane[0].len(), *d);
-//         if !mo.out_of_bounds && plane[mo.row][mo.col] == curr_val + 1 {
-//             if plane[mo.row][mo.col] == target {
-//                 let last_step = vec![vec![(start_row, start_col), (mo.row, mo.col)]];
-//                 println!("last_step: {:?}", last_step);
-//                 last_step
-//             } else {
-//                 paths_forward(plane, target, mo.row, mo.col)
-//                     .iter()
-//                     .map(|f_path| {
-//                         let mut path = vec![(start_row, start_col)];
-//                         path.extend(f_path);
-//                         path
-//                     })
-//                     .collect()
-//             }
-//         } else {
-//             vec![]
-//         }
-//     })
-//     .collect()
-// }
-
 fn one_step(
     plane: &Vec<Vec<u32>>,
     target: u32,
@@ -88,6 +48,46 @@ fn reachable_destinations(
     all_n
 }
 
+pub fn paths_forward(
+    plane: &Vec<Vec<u32>>,
+    target: u32,
+    start_row: usize,
+    start_col: usize,
+) -> Vec<Vec<(usize, usize)>> {
+    let curr_val = plane[start_row][start_col];
+    println!("{} @ ({},{})", curr_val, start_row, start_col);
+
+    [
+        plane::Direction::Down,
+        plane::Direction::Up,
+        plane::Direction::Left,
+        plane::Direction::Right,
+    ]
+    .iter()
+    .flat_map(|d| {
+        let mo = plane::move_one(start_row, start_col, plane.len(), plane[0].len(), *d);
+        if !mo.out_of_bounds && plane[mo.row][mo.col] == curr_val + 1 {
+            if plane[mo.row][mo.col] == target {
+                let last_step = vec![vec![(start_row, start_col), (mo.row, mo.col)]];
+                println!("last_step: {:?}", last_step);
+                last_step
+            } else {
+                paths_forward(plane, target, mo.row, mo.col)
+                    .iter()
+                    .map(|f_path| {
+                        let mut path = vec![(start_row, start_col)];
+                        path.extend(f_path);
+                        path
+                    })
+                    .collect()
+            }
+        } else {
+            vec![]
+        }
+    })
+    .collect()
+}
+
 fn p1(plane: &Vec<Vec<u32>>, destination: u32) -> usize {
     matrix::find_all(plane, 0)
         .iter()
@@ -100,13 +100,21 @@ pub fn d10p1(file_path: &str) -> usize {
     p1(&mat, 9)
 }
 
+fn p2(plane: &Vec<Vec<u32>>, destination: u32) -> usize {
+    matrix::find_all(plane, 0)
+        .iter()
+        .map(|(row, col)| paths_forward(plane, destination, *row, *col).len())
+        .sum()
+}
+
 pub fn d10p2(file_path: &str) -> usize {
-    0
+    let mat = matrix::as_digit_matrix(file_path, 10);
+    p2(&mat, 9)
 }
 
 pub fn d10() {
-//    let file_path = "inputs/d10sample1.txt";
-//    let file_path = "inputs/d10sample2.txt";
+    //    let file_path = "inputs/d10sample1.txt";
+    //    let file_path = "inputs/d10sample2.txt";
     let file_path = "inputs/d10.txt";
     let mut result = d10p1(file_path);
     println!("Result Day 10 Part 1: {}", result);
@@ -164,5 +172,52 @@ mod tests {
             "10456732".to_string(),
         ]);
         assert_eq!(p1(&mat, 9), 36);
+    }
+
+    #[test]
+    fn test_p2() {
+        let mut mat = as_int_matrix(vec![
+            ".....0.".to_string(),
+            "..4321.".to_string(),
+            "..5..2.".to_string(),
+            "..6543.".to_string(),
+            "..7..4.".to_string(),
+            "..8765.".to_string(),
+            "..9....".to_string(),
+        ]);
+        assert_eq!(p2(&mat, 9), 3);
+
+        mat = as_int_matrix(vec![
+            "..90..9".to_string(),
+            "...1.98".to_string(),
+            "...2..7".to_string(),
+            "6543456".to_string(),
+            "765.987".to_string(),
+            "876....".to_string(),
+            "987....".to_string(),
+        ]);
+        assert_eq!(p2(&mat, 9), 13);
+
+        mat = as_int_matrix(vec![
+            "012345".to_string(),
+            "123456".to_string(),
+            "234567".to_string(),
+            "345678".to_string(),
+            "4.6789".to_string(),
+            "56789.".to_string(),
+        ]);
+        assert_eq!(p2(&mat, 9), 227);
+
+        mat = as_int_matrix(vec![
+            "89010123".to_string(),
+            "78121874".to_string(),
+            "87430965".to_string(),
+            "96549874".to_string(),
+            "45678903".to_string(),
+            "32019012".to_string(),
+            "01329801".to_string(),
+            "10456732".to_string(),
+        ]);
+        assert_eq!(p2(&mat, 9), 81);
     }
 }
