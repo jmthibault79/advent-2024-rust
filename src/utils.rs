@@ -71,6 +71,19 @@ pub fn all_pairs<T: Clone>(v: &Vec<T>) -> Vec<(T, T)> {
     result
 }
 
+pub fn distinct<T>(v: Vec<T>) -> Vec<T>
+where
+    T: Eq + Hash + Clone,
+{
+    let mut seen = HashMap::new();
+    for x in v {
+        if !seen.contains_key(&x) {
+            seen.insert(x.clone(), 1);
+        }
+    }
+    seen.keys().cloned().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -3,7 +3,7 @@ use crate::utils;
 // safe means monotonically increasing or decreasing and only differing by 1 to 3
 fn d2p1_is_safe(v: &Vec<u32>) -> bool {
     let (first, second) = (v[0] as i32, v[1] as i32);
-    let direction= match second - first {
+    let direction = match second - first {
         0 => return false,
         x if x > 3 || x < -3 => return false,
         x if x > 0 => 1,
