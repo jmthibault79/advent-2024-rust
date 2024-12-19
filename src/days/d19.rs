@@ -36,10 +36,8 @@ fn pattern_combos<'a>(
             } else {
                 memo.get(&(design, *pattern)).copied().unwrap_or_else(|| {
                     let result = {
-                        let pc = pattern.chars().count();
-                        // if design.starts_with(pattern)
-                        if design.chars().count() >= pc && utils::equals(pattern, &design[..pc]) {
-                            pattern_combos(&design[pc..], patterns, memo)
+                        if design.starts_with(pattern) {
+                            pattern_combos(&design[pattern.chars().count()..], patterns, memo)
                         } else {
                             0
                         }
