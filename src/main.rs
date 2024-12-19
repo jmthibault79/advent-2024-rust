@@ -13,5 +13,7 @@ fn main() {
     // days::d7::d7();
     // days::d8::d8();
     // days::d9::d9();
-    days::d10::d10();
+    // days::d10::d10();
+
+    days::d19::d19();
 }
