@@ -84,6 +84,10 @@ where
     seen.keys().cloned().collect()
 }
 
+pub fn equals(a: &str, b: &str) -> bool {
+    a.chars().count() == b.chars().count() && a.chars().zip(b.chars()).all(|(a, b)| a == b)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -96,5 +100,18 @@ mod tests {
             all_pairs(&vec!['a', 'b', 'c']).sort(),
             vec![('a', 'b'), ('b', 'c'), ('a', 'c')].sort()
         );
+    }
+
+    #[test]
+    fn str_equals_test() {
+        assert!(equals("", ""));
+        assert!(!equals("a", ""));
+        assert!(!equals("", "a"));
+        assert!(equals("a", "a"));
+        assert!(equals("ab", "ab"));
+        assert!(!equals("a", "ab"));
+        assert!(!equals("ab", "a"));
+        assert!(!equals("b", "ab"));
+        assert!(!equals("ab", "b"));
     }
 }

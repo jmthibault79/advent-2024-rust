@@ -1,4 +1,5 @@
 use crate::utils;
+use std::collections::HashMap;
 
 fn parse(file_path: &str) -> (Vec<String>, Vec<String>) {
     let mut iter = utils::string_iter(file_path);
@@ -14,20 +15,38 @@ fn parse(file_path: &str) -> (Vec<String>, Vec<String>) {
     (patterns, designs)
 }
 
-fn patterns_can_create(design: &String, patterns: &Vec<String>) -> bool {
-    pattern_combos(design, patterns) > 0
+fn patterns_can_create<'a>(
+    design: &'a String,
+    pattern_slices: &Vec<&'a str>,
+    memo: &mut HashMap<(&'a str, &'a str), usize>,
+) -> bool {
+    pattern_combos(design, &pattern_slices, memo) > 0
 }
 
-fn pattern_combos(design: &String, patterns: &Vec<String>) -> usize {
+fn pattern_combos<'a>(
+    design: &'a str,
+    patterns: &Vec<&'a str>,
+    memo: &mut HashMap<(&'a str, &'a str), usize>,
+) -> usize {
     patterns
         .iter()
         .map(|pattern| {
-            if design == pattern {
+            if utils::equals(design, *pattern) {
                 1
-            } else if design.starts_with(pattern) {
-                pattern_combos(&design[pattern.len()..].to_string(), patterns)
             } else {
-                0
+                memo.get(&(design, *pattern)).copied().unwrap_or_else(|| {
+                    let result = {
+                        let pc = pattern.chars().count();
+                        // if design.starts_with(pattern)
+                        if design.chars().count() >= pc && utils::equals(pattern, &design[..pc]) {
+                            pattern_combos(&design[pc..], patterns, memo)
+                        } else {
+                            0
+                        }
+                    };
+                    memo.insert((design, *pattern), result);
+                    result
+                })
             }
         })
         .sum()
@@ -35,31 +54,39 @@ fn pattern_combos(design: &String, patterns: &Vec<String>) -> usize {
 
 pub fn d19p1(file_path: &str) -> usize {
     let (patterns, designs) = parse(file_path);
+    let pattern_slices: Vec<&str> = patterns.iter().map(String::as_str).collect();
+
+    let mut combo_memoizer: HashMap<(&str, &str), usize> = HashMap::new();
+
     designs
         .iter()
         .enumerate()
         .filter(|(idx, design)| {
             println!("Checking design {}: {}", idx, design);
-            patterns_can_create(design, &patterns)
+            patterns_can_create(design, &pattern_slices, &mut combo_memoizer)
         })
         .count()
 }
 
 pub fn d19p2(file_path: &str) -> usize {
     let (patterns, designs) = parse(file_path);
+    let pattern_slices: Vec<&str> = patterns.iter().map(String::as_str).collect();
+
+    let mut combo_memoizer: HashMap<(&str, &str), usize> = HashMap::new();
+
     designs
         .iter()
         .enumerate()
         .map(|(idx, design)| {
             println!("Checking design {}: {}", idx, design);
-            pattern_combos(design, &patterns)
+            pattern_combos(design, &pattern_slices, &mut combo_memoizer)
         })
         .sum()
 }
 
 pub fn d19() {
-    let file_path = "inputs/d19sample.txt";
-    //let file_path = "inputs/d19.txt";
+    //let file_path = "inputs/d19sample.txt";
+    let file_path = "inputs/d19.txt";
     let mut result = d19p1(file_path);
     println!("Result Day 19 Part 1: {}", result);
     result = d19p2(file_path);
@@ -73,19 +100,23 @@ mod tests {
     fn can_create() {
         assert!(patterns_can_create(
             &"a".to_string(),
-            &vec!["a".to_string()]
+            &vec!["a"],
+            &mut HashMap::new()
         ));
         assert!(!patterns_can_create(
             &"a".to_string(),
-            &vec!["b".to_string()]
+            &vec!["b"],
+            &mut HashMap::new()
         ));
         assert!(patterns_can_create(
             &"ab".to_string(),
-            &vec!["a".to_string(), "b".to_string()]
+            &vec!["a", "b"],
+            &mut HashMap::new()
         ));
         assert!(patterns_can_create(
             &"ababaaaabbbababa".to_string(),
-            &vec!["a".to_string(), "b".to_string()]
+            &vec!["a", "b"],
+            &mut HashMap::new()
         ));
     }
 }
