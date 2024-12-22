@@ -1,4 +1,6 @@
 use crate::utils;
+use std::collections::HashMap;
+
 const START_POS: char = 'A';
 
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
@@ -21,6 +23,127 @@ pub enum DirectionAndPush {
 //     | 0 | A |
 //     +---+---+
 const L1_CHARS: [char; 11] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'A'];
+fn get_l1_adjacency_map() -> HashMap<(char, char), DirectionAndPush> {
+    let mut adjacency_map = HashMap::new();
+
+    // right
+
+    adjacency_map.insert(('7', '8'), DirectionAndPush::Right);
+    adjacency_map.insert(('8', '9'), DirectionAndPush::Right);
+
+    adjacency_map.insert(('4', '5'), DirectionAndPush::Right);
+    adjacency_map.insert(('5', '6'), DirectionAndPush::Right);
+
+    adjacency_map.insert(('1', '2'), DirectionAndPush::Right);
+    adjacency_map.insert(('2', '3'), DirectionAndPush::Right);
+
+    adjacency_map.insert(('0', 'A'), DirectionAndPush::Right);
+
+    // left
+
+    adjacency_map.insert(('9', '8'), DirectionAndPush::Left);
+    adjacency_map.insert(('8', '7'), DirectionAndPush::Left);
+
+    adjacency_map.insert(('6', '5'), DirectionAndPush::Left);
+    adjacency_map.insert(('5', '4'), DirectionAndPush::Left);
+
+    adjacency_map.insert(('3', '2'), DirectionAndPush::Left);
+    adjacency_map.insert(('2', '1'), DirectionAndPush::Left);
+
+    adjacency_map.insert(('A', '0'), DirectionAndPush::Left);
+
+    // down
+
+    adjacency_map.insert(('7', '4'), DirectionAndPush::Down);
+    adjacency_map.insert(('4', '1'), DirectionAndPush::Down);
+
+    adjacency_map.insert(('8', '5'), DirectionAndPush::Down);
+    adjacency_map.insert(('5', '2'), DirectionAndPush::Down);
+    adjacency_map.insert(('2', '0'), DirectionAndPush::Down);
+
+    adjacency_map.insert(('9', '6'), DirectionAndPush::Down);
+    adjacency_map.insert(('6', '3'), DirectionAndPush::Down);
+    adjacency_map.insert(('3', 'A'), DirectionAndPush::Down);
+
+    // up
+
+    adjacency_map.insert(('1', '4'), DirectionAndPush::Up);
+    adjacency_map.insert(('4', '7'), DirectionAndPush::Up);
+
+    adjacency_map.insert(('0', '2'), DirectionAndPush::Up);
+    adjacency_map.insert(('2', '5'), DirectionAndPush::Up);
+    adjacency_map.insert(('5', '8'), DirectionAndPush::Up);
+
+    adjacency_map.insert(('A', '3'), DirectionAndPush::Up);
+    adjacency_map.insert(('3', '6'), DirectionAndPush::Up);
+    adjacency_map.insert(('6', '9'), DirectionAndPush::Up);
+
+    adjacency_map
+}
+
+fn l1_shortest_between_2(
+    adj: &HashMap<(char, char), DirectionAndPush>,
+    seen: &Vec<char>,
+    src: char,
+    dest: char,
+) -> Vec<Vec<DirectionAndPush>> {
+    if !L1_CHARS.contains(&src) || !L1_CHARS.contains(&dest) {
+        panic!("Invalid source or destination")
+    }
+
+    if src == dest {
+        return vec![vec![]];
+    }
+
+    let mut my_seen = seen.clone();
+    match adj.get(&(src, dest)) {
+        Some(dir) => vec![vec![dir.clone()]],
+        _ => {
+            my_seen.push(src);
+
+            // (next step, next step's destination)
+            let next_step_options: Vec<(DirectionAndPush, char)> = L1_CHARS
+                .iter()
+                .flat_map(|next_dest| {
+                    // I'd prefer to filter this earlier, but that causes an immutable borrow which interferes with the (mutable borrow) push
+                    if (my_seen.contains(next_dest)) {
+                        vec![]
+                    } else {
+                        match adj.get(&(src, *next_dest)) {
+                            Some(dir) => {
+                                my_seen.push(*next_dest);
+                                vec![(dir.clone(), *next_dest)]
+                            }
+                            _ => vec![],
+                        }
+                    }
+                })
+                .collect();
+
+            // .0 is the next step, .1 is the next step's destination
+            // if next_step_options.len() == 1 && next_step_options[0].1 == dest {
+            //     return vec![vec![next_step_options[0].0.clone()]];
+            // } else {
+            let mut paths_from_here = Vec::new();
+
+            for (next_direction, next_dest) in next_step_options {
+                let next_paths = l1_shortest_between_2(adj, &my_seen, next_dest, dest);
+                for mut next_path in next_paths {
+                    next_path.insert(0, next_direction.clone());
+                    paths_from_here.push(next_path.clone());
+                }
+            }
+
+            let min_len = paths_from_here.iter().map(|p| p.len()).min().unwrap_or(0);
+            paths_from_here
+                .iter()
+                .filter(|p| p.len() == min_len)
+                .cloned()
+                .collect()
+        }
+    }
+}
+
 fn l1_shortest_between(src: char, dest: char) -> Vec<DirectionAndPush> {
     let (first_step, first_dest) = match (src, dest) {
         (s, d) if !L1_CHARS.contains(&s) || !L1_CHARS.contains(&d) => {
@@ -93,6 +216,27 @@ fn l1_shortest_path(l1_desired_buttons: Vec<char>) -> Vec<DirectionAndPush> {
     }
     // println!("L1 complete: {:?}", result);
     result
+}
+
+fn l1_shortest_paths(
+    adj: &HashMap<(char, char), DirectionAndPush>,
+    l1_desired_buttons: Vec<char>,
+) -> Vec<Vec<DirectionAndPush>> {
+    let mut options_per_step = vec![];
+    let mut current_pos = START_POS;
+    for l1_button in l1_desired_buttons {
+        let mut current_button_options = Vec::new();
+        let step_options_to_button = l1_shortest_between_2(adj, &vec![], current_pos, l1_button);
+        for mut steps_option_to_button in step_options_to_button {
+            steps_option_to_button.push(DirectionAndPush::Push);
+            current_button_options.push(steps_option_to_button);
+        }
+        current_pos = l1_button.clone();
+        options_per_step.push(current_button_options.clone());
+        current_button_options.clear();
+    }
+
+    combine_button_options(options_per_step)
 }
 
 // level 2 keypad
@@ -220,10 +364,21 @@ fn l2_shortest_paths(prev_level_path: &Vec<DirectionAndPush>) -> Vec<Vec<Directi
 pub fn get_complexity(s: String) -> usize {
     println!("s: {}", s);
     let l1_desired_buttons: Vec<char> = s.chars().collect();
-    let l1_path = l1_shortest_path(l1_desired_buttons);
-    // println!("L1: {:?}", l1_path);
+    let l1_paths = l1_shortest_paths(&get_l1_adjacency_map(), l1_desired_buttons);
+    let l1_min = l1_paths.iter().map(|p| p.len()).min().unwrap();
+    let l1_max = l1_paths.iter().map(|p| p.len()).max().unwrap();
+    println!(
+        "L1 path count {} / min {} / max {}",
+        l1_paths.len(),
+        l1_min,
+        l1_max
+    );
 
-    let l2_paths = l2_shortest_paths(&l1_path);
+    let l2_paths: Vec<Vec<_>> = l1_paths
+        .iter()
+        .filter(|p| p.len() == l1_min)
+        .flat_map(l2_shortest_paths)
+        .collect();
     let l2_min = l2_paths.iter().map(|p| p.len()).min().unwrap();
     let l2_max = l2_paths.iter().map(|p| p.len()).max().unwrap();
     println!(
@@ -234,7 +389,11 @@ pub fn get_complexity(s: String) -> usize {
     );
 
     // L3 is just L2 again
-    let l3_paths: Vec<Vec<_>> = l2_paths.iter().flat_map(l2_shortest_paths).collect();
+    let l3_paths: Vec<Vec<_>> = l2_paths
+        .iter()
+        .filter(|p| p.len() == l2_min)
+        .flat_map(l2_shortest_paths)
+        .collect();
     let l3_min = l3_paths.iter().map(|p| p.len()).min().unwrap();
     let l3_max = l3_paths.iter().map(|p| p.len()).max().unwrap();
     println!(
@@ -248,8 +407,8 @@ pub fn get_complexity(s: String) -> usize {
     let parsed_from_input = s[0..s.len() - 1].parse::<usize>().unwrap();
     let complexity = parsed_from_input * l3_min;
     println!(
-        "parsed * min L3 = {} * {} = {}",
-        parsed_from_input, l3_min, complexity
+        "min L3 * parsed: {} * {} = {}",
+        l3_min, parsed_from_input, complexity
     );
     complexity
 }
@@ -263,8 +422,8 @@ pub fn d21p2(file_path: &str) -> usize {
 }
 
 pub fn d21() {
-    let file_path = "inputs/d21sample.txt";
-    //let file_path = "inputs/d21.txt";
+    //let file_path = "inputs/d21sample.txt";
+    let file_path = "inputs/d21.txt";
     let mut result = d21p1(file_path);
     println!("Result Day 21 Part 1: {}", result);
     result = d21p2(file_path);
@@ -327,7 +486,7 @@ mod tests {
     // }
 
     #[test]
-    fn test() {
+    fn test_l1_shortest_between() {
         assert!(catch_unwind(|| l1_shortest_between('1', 'q')).is_err());
 
         assert_eq!(l1_shortest_between('0', 'A'), vec![DirectionAndPush::Right]);
@@ -364,6 +523,68 @@ mod tests {
         assert_eq!(
             l1_shortest_between('9', '5'),
             vec![DirectionAndPush::Down, DirectionAndPush::Left]
+        );
+    }
+
+    #[test]
+    fn test_l1_shortest_between_2() {
+        let adjacency = get_l1_adjacency_map();
+        let seen = vec![];
+
+        assert!(catch_unwind(|| l1_shortest_between_2(&adjacency, &seen, '1', 'q')).is_err());
+
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, '0', 'A'),
+            vec![vec![DirectionAndPush::Right]]
+        );
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, 'A', '0'),
+            vec![vec![DirectionAndPush::Left]]
+        );
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, '1', '4'),
+            vec![vec![DirectionAndPush::Up]]
+        );
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, '5', '8'),
+            vec![vec![DirectionAndPush::Up]]
+        );
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, '5', '4'),
+            vec![vec![DirectionAndPush::Left]]
+        );
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, '8', '9'),
+            vec![vec![DirectionAndPush::Right]]
+        );
+
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, 'A', 'A'),
+            vec![vec![]]
+        );
+
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, '4', '2'),
+            vec![
+                vec![DirectionAndPush::Down, DirectionAndPush::Right],
+                vec![DirectionAndPush::Right, DirectionAndPush::Down]
+            ]
+        );
+
+        assert_eq!(
+            l1_shortest_between_2(&adjacency, &seen, 'A', '1'),
+            vec![
+                vec![
+                    DirectionAndPush::Up,
+                    DirectionAndPush::Left,
+                    DirectionAndPush::Left
+                ],
+                vec![
+                    DirectionAndPush::Left,
+                    DirectionAndPush::Up,
+                    DirectionAndPush::Left
+                ]
+            ]
         );
     }
 
