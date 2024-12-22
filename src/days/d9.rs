@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn defrag_p2_test() {
-        let mut fragmented = vec![Some(0), None, None, Some(1), None, Some(2), Some(2)];
+        let fragmented = vec![Some(0), None, None, Some(1), None, Some(2), Some(2)];
         assert_eq!(
             defrag_p2(fragmented),
             vec![Some(0), Some(2), Some(2), Some(1), None, None, None]

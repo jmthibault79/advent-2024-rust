@@ -2,6 +2,8 @@ pub mod d1;
 pub mod d10;
 pub mod d19;
 pub mod d2;
+pub mod d20;
+pub mod d21;
 pub mod d3;
 pub mod d4;
 pub mod d5;
