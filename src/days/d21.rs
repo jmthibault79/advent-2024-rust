@@ -1,7 +1,7 @@
 use crate::utils;
 use std::collections::HashMap;
 
-#[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
+#[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone, Hash, Copy)]
 pub enum DirectionAndPush {
     Up,    // ^
     Down,  // v
@@ -106,7 +106,12 @@ fn l1_shortest_between_2(
     seen: &Vec<char>,
     src: char,
     dest: char,
+    memoizer: &mut HashMap<(char, char), Vec<Vec<DirectionAndPush>>>,
 ) -> Vec<Vec<DirectionAndPush>> {
+    if let Some(memoized) = memoizer.get(&(src, dest)) {
+        return memoized.clone();
+    }
+
     if !L1_CHARS.contains(&src) || !L1_CHARS.contains(&dest) {
         panic!("Invalid source or destination")
     }
@@ -116,7 +121,7 @@ fn l1_shortest_between_2(
     }
 
     let mut my_seen = seen.clone();
-    match adj.get(&(src, dest)) {
+    let result = match adj.get(&(src, dest)) {
         Some(dir) => vec![vec![dir.clone()]],
         _ => {
             my_seen.push(src);
@@ -126,7 +131,7 @@ fn l1_shortest_between_2(
                 .iter()
                 .flat_map(|next_dest| {
                     // I'd prefer to filter this earlier, but that causes an immutable borrow which interferes with the (mutable borrow) push
-                    if (my_seen.contains(next_dest)) {
+                    if my_seen.contains(next_dest) {
                         vec![]
                     } else {
                         match adj.get(&(src, *next_dest)) {
@@ -147,7 +152,7 @@ fn l1_shortest_between_2(
             let mut paths_from_here = Vec::new();
 
             for (next_direction, next_dest) in next_step_options {
-                let next_paths = l1_shortest_between_2(adj, &my_seen, next_dest, dest);
+                let next_paths = l1_shortest_between_2(adj, &my_seen, next_dest, dest, memoizer);
                 for mut next_path in next_paths {
                     next_path.insert(0, next_direction.clone());
                     paths_from_here.push(next_path.clone());
@@ -161,7 +166,10 @@ fn l1_shortest_between_2(
                 .cloned()
                 .collect()
         }
-    }
+    };
+
+    memoizer.insert((src, dest), result.clone());
+    result
 }
 
 fn l1_shortest_paths(
@@ -170,9 +178,11 @@ fn l1_shortest_paths(
 ) -> Vec<Vec<DirectionAndPush>> {
     let mut options_per_step = vec![];
     let mut current_pos = START_CHAR;
+    let memoizer = &mut HashMap::new();
     for l1_button in l1_desired_buttons {
         let mut current_button_options = Vec::new();
-        let step_options_to_button = l1_shortest_between_2(adj, &vec![], current_pos, l1_button);
+        let step_options_to_button =
+            l1_shortest_between_2(adj, &vec![], current_pos, l1_button, memoizer);
         for mut steps_option_to_button in step_options_to_button {
             steps_option_to_button.push(DirectionAndPush::Push);
             current_button_options.push(steps_option_to_button);
@@ -193,9 +203,14 @@ fn l1_shortest_paths(
 // +---+---+---+
 
 fn l2_shortest_between_2(
-    src: &DirectionAndPush,
-    dest: &DirectionAndPush,
+    src: DirectionAndPush,
+    dest: DirectionAndPush,
+    memoizer: &mut HashMap<(DirectionAndPush, DirectionAndPush), Vec<Vec<DirectionAndPush>>>,
 ) -> Vec<Vec<DirectionAndPush>> {
+    if let Some(memoized) = memoizer.get(&(src, dest)) {
+        return memoized.clone();
+    }
+
     let next_step_options = match (src, dest) {
         (s, d) if s == d => {
             return vec![vec![]];
@@ -253,13 +268,13 @@ fn l2_shortest_between_2(
     };
 
     // .0 is the next step, .1 is the next step's destination
-    if next_step_options.len() == 1 && next_step_options[0].1 == *dest {
+    let result = if next_step_options.len() == 1 && next_step_options[0].1 == dest {
         return vec![vec![next_step_options[0].0.clone()]];
     } else {
         let mut paths_from_here = Vec::new();
 
         for (next_direction, next_dest) in next_step_options {
-            let next_paths = l2_shortest_between_2(&next_dest, dest);
+            let next_paths = l2_shortest_between_2(next_dest, dest, memoizer);
             for mut next_path in next_paths {
                 next_path.insert(0, next_direction.clone());
                 paths_from_here.push(next_path.clone());
@@ -267,20 +282,27 @@ fn l2_shortest_between_2(
         }
 
         paths_from_here
-    }
+    };
+
+    memoizer.insert((src, dest), result.clone());
+    result
 }
 
-fn l2_shortest_paths(prev_level_path: &Vec<DirectionAndPush>) -> Vec<Vec<DirectionAndPush>> {
+fn l2_shortest_paths(
+    prev_level_path: &Vec<DirectionAndPush>,
+    memoizer: &mut HashMap<(DirectionAndPush, DirectionAndPush), Vec<Vec<DirectionAndPush>>>,
+) -> Vec<Vec<DirectionAndPush>> {
     let mut options_per_step = vec![];
     let mut current_pos = START_DIR;
     for prev_level_button in prev_level_path {
         let mut current_button_options = Vec::new();
-        let step_options_to_button = l2_shortest_between_2(&current_pos, &prev_level_button);
+        let step_options_to_button =
+            l2_shortest_between_2(current_pos, *prev_level_button, memoizer);
         for mut steps_option_to_button in step_options_to_button {
             steps_option_to_button.push(DirectionAndPush::Push);
             current_button_options.push(steps_option_to_button);
         }
-        current_pos = prev_level_button.clone();
+        current_pos = *prev_level_button;
         options_per_step.push(current_button_options.clone());
         current_button_options.clear();
     }
@@ -301,10 +323,14 @@ pub fn get_complexity(s: String) -> usize {
         l1_max
     );
 
+    let l2_memoizer: &mut HashMap<
+        (DirectionAndPush, DirectionAndPush),
+        Vec<Vec<DirectionAndPush>>,
+    > = &mut HashMap::new();
     let l2_paths: Vec<Vec<_>> = l1_paths
         .iter()
         .filter(|p| p.len() == l1_min)
-        .flat_map(l2_shortest_paths)
+        .flat_map(|p| l2_shortest_paths(p, l2_memoizer))
         .collect();
     let l2_min = l2_paths.iter().map(|p| p.len()).min().unwrap();
     let l2_max = l2_paths.iter().map(|p| p.len()).max().unwrap();
@@ -319,7 +345,7 @@ pub fn get_complexity(s: String) -> usize {
     let l3_paths: Vec<Vec<_>> = l2_paths
         .iter()
         .filter(|p| p.len() == l2_min)
-        .flat_map(l2_shortest_paths)
+        .flat_map(|p| l2_shortest_paths(p, l2_memoizer))
         .collect();
     let l3_min = l3_paths.iter().map(|p| p.len()).min().unwrap();
     let l3_max = l3_paths.iter().map(|p| p.len()).max().unwrap();
@@ -358,95 +384,48 @@ pub fn d21() {
 }
 
 mod tests {
-    use std::panic::catch_unwind;
     use std::vec;
 
     use super::*;
-
-    fn parse_dir_str(s: &str) -> Vec<DirectionAndPush> {
-        s.chars()
-            .map(|c| match c {
-                '^' => DirectionAndPush::Up,
-                'v' => DirectionAndPush::Down,
-                '<' => DirectionAndPush::Left,
-                '>' => DirectionAndPush::Right,
-                'A' => DirectionAndPush::Push,
-                _ => panic!("Invalid direction"),
-            })
-            .collect()
-    }
-
-    fn print_paths(p1: &[DirectionAndPush], p2: &[DirectionAndPush]) {
-        println!(
-            "Printing paths. P1 len = {}, P2 len = {}",
-            p1.len(),
-            p2.len()
-        );
-        let (mut p1_itr, mut p2_itr) = (0, 0);
-        while p1_itr < p1.len() && p2_itr < p2.len() {
-            print!("P1: ");
-            while p1_itr < p1.len() {
-                let p1_val = &p1[p1_itr];
-                print!("{:?}, ", p1_val);
-                p1_itr += 1;
-                if *p1_val == DirectionAndPush::Push {
-                    break;
-                }
-            }
-
-            print!("P2: ");
-            while p2_itr < p2.len() {
-                let p2_val = &p2[p2_itr];
-                print!("{:?}, ", p2_val);
-                p2_itr += 1;
-                if *p2_val == DirectionAndPush::Push {
-                    break;
-                }
-            }
-
-            println!();
-        }
-    }
 
     #[test]
     fn test_l1_shortest_between_2() {
         let adjacency = get_l1_adjacency_map();
         let seen = vec![];
-
-        assert!(catch_unwind(|| l1_shortest_between_2(&adjacency, &seen, '1', 'q')).is_err());
+        let memoizer = &mut HashMap::new();
 
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, '0', 'A'),
+            l1_shortest_between_2(&adjacency, &seen, '0', 'A', memoizer),
             vec![vec![DirectionAndPush::Right]]
         );
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, 'A', '0'),
+            l1_shortest_between_2(&adjacency, &seen, 'A', '0', memoizer),
             vec![vec![DirectionAndPush::Left]]
         );
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, '1', '4'),
+            l1_shortest_between_2(&adjacency, &seen, '1', '4', memoizer),
             vec![vec![DirectionAndPush::Up]]
         );
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, '5', '8'),
+            l1_shortest_between_2(&adjacency, &seen, '5', '8', memoizer),
             vec![vec![DirectionAndPush::Up]]
         );
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, '5', '4'),
+            l1_shortest_between_2(&adjacency, &seen, '5', '4', memoizer),
             vec![vec![DirectionAndPush::Left]]
         );
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, '8', '9'),
+            l1_shortest_between_2(&adjacency, &seen, '8', '9', memoizer),
             vec![vec![DirectionAndPush::Right]]
         );
 
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, 'A', 'A'),
+            l1_shortest_between_2(&adjacency, &seen, 'A', 'A', memoizer),
             vec![vec![]]
         );
 
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, '4', '2'),
+            l1_shortest_between_2(&adjacency, &seen, '4', '2', memoizer),
             vec![
                 vec![DirectionAndPush::Down, DirectionAndPush::Right],
                 vec![DirectionAndPush::Right, DirectionAndPush::Down]
@@ -454,7 +433,7 @@ mod tests {
         );
 
         assert_eq!(
-            l1_shortest_between_2(&adjacency, &seen, 'A', '1'),
+            l1_shortest_between_2(&adjacency, &seen, 'A', '1', memoizer),
             vec![
                 vec![
                     DirectionAndPush::Up,
@@ -472,25 +451,27 @@ mod tests {
 
     #[test]
     fn l2_shortest_test() {
+        let memoizer = &mut HashMap::new();
+
         // single option cases
 
         assert_eq!(
-            l2_shortest_between_2(&DirectionAndPush::Push, &DirectionAndPush::Push),
+            l2_shortest_between_2(DirectionAndPush::Push, DirectionAndPush::Push, memoizer),
             vec![vec![]]
         );
         assert_eq!(
-            l2_shortest_between_2(&DirectionAndPush::Left, &DirectionAndPush::Down),
+            l2_shortest_between_2(DirectionAndPush::Left, DirectionAndPush::Down, memoizer),
             vec![vec![DirectionAndPush::Right]]
         );
         assert_eq!(
-            l2_shortest_between_2(&DirectionAndPush::Left, &DirectionAndPush::Right),
+            l2_shortest_between_2(DirectionAndPush::Left, DirectionAndPush::Right, memoizer),
             vec![vec![DirectionAndPush::Right, DirectionAndPush::Right]]
         );
 
         // multiple option cases
 
         assert_eq!(
-            l2_shortest_between_2(&DirectionAndPush::Down, &DirectionAndPush::Push),
+            l2_shortest_between_2(DirectionAndPush::Down, DirectionAndPush::Push, memoizer),
             vec![
                 vec![DirectionAndPush::Right, DirectionAndPush::Up],
                 vec![DirectionAndPush::Up, DirectionAndPush::Right]
@@ -498,7 +479,7 @@ mod tests {
         );
 
         assert_eq!(
-            l2_shortest_between_2(&DirectionAndPush::Push, &DirectionAndPush::Down),
+            l2_shortest_between_2(DirectionAndPush::Push, DirectionAndPush::Down, memoizer),
             vec![
                 vec![DirectionAndPush::Left, DirectionAndPush::Down],
                 vec![DirectionAndPush::Down, DirectionAndPush::Left],
@@ -506,7 +487,7 @@ mod tests {
         );
 
         assert_eq!(
-            l2_shortest_between_2(&DirectionAndPush::Left, &DirectionAndPush::Push),
+            l2_shortest_between_2(DirectionAndPush::Left, DirectionAndPush::Push, memoizer),
             vec![
                 vec![
                     DirectionAndPush::Right,
@@ -522,7 +503,7 @@ mod tests {
         );
 
         assert_eq!(
-            l2_shortest_between_2(&DirectionAndPush::Push, &DirectionAndPush::Left),
+            l2_shortest_between_2(DirectionAndPush::Push, DirectionAndPush::Left, memoizer),
             vec![
                 vec![
                     DirectionAndPush::Left,
@@ -540,22 +521,24 @@ mod tests {
 
     #[test]
     fn l2_shortest_paths_test() {
+        let memoizer = &mut HashMap::new();
+
         // single button
 
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Push]),
+            l2_shortest_paths(&vec![DirectionAndPush::Push], memoizer),
             vec![vec![DirectionAndPush::Push]]
         );
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Up]),
+            l2_shortest_paths(&vec![DirectionAndPush::Up], memoizer),
             vec![vec![DirectionAndPush::Left, DirectionAndPush::Push]]
         );
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Right]),
+            l2_shortest_paths(&vec![DirectionAndPush::Right], memoizer),
             vec![vec![DirectionAndPush::Down, DirectionAndPush::Push]]
         );
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Down]),
+            l2_shortest_paths(&vec![DirectionAndPush::Down], memoizer),
             vec![
                 vec![
                     DirectionAndPush::Left,
@@ -570,7 +553,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Left]),
+            l2_shortest_paths(&vec![DirectionAndPush::Left], memoizer),
             vec![
                 vec![
                     DirectionAndPush::Left,
@@ -590,12 +573,18 @@ mod tests {
         // simple two step
 
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Push, DirectionAndPush::Push]),
+            l2_shortest_paths(
+                &vec![DirectionAndPush::Push, DirectionAndPush::Push],
+                memoizer
+            ),
             vec![vec![DirectionAndPush::Push, DirectionAndPush::Push]]
         );
 
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Push, DirectionAndPush::Up]),
+            l2_shortest_paths(
+                &vec![DirectionAndPush::Push, DirectionAndPush::Up],
+                memoizer
+            ),
             vec![vec![
                 DirectionAndPush::Push,
                 DirectionAndPush::Left,
@@ -604,7 +593,10 @@ mod tests {
         );
 
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Up, DirectionAndPush::Down]),
+            l2_shortest_paths(
+                &vec![DirectionAndPush::Up, DirectionAndPush::Down],
+                memoizer
+            ),
             vec![vec![
                 DirectionAndPush::Left,
                 DirectionAndPush::Push,
@@ -614,7 +606,10 @@ mod tests {
         );
 
         assert_eq!(
-            l2_shortest_paths(&vec![DirectionAndPush::Down, DirectionAndPush::Push]),
+            l2_shortest_paths(
+                &vec![DirectionAndPush::Down, DirectionAndPush::Push],
+                memoizer
+            ),
             vec![
                 vec![
                     DirectionAndPush::Left,
