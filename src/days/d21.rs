@@ -1,8 +1,6 @@
 use crate::utils;
 use std::collections::HashMap;
 
-const START_POS: char = 'A';
-
 #[derive(PartialEq, Eq, Debug, PartialOrd, Ord, Clone)]
 pub enum DirectionAndPush {
     Up,    // ^
@@ -10,6 +8,28 @@ pub enum DirectionAndPush {
     Left,  // <
     Right, // >
     Push,  // A
+}
+
+const START_CHAR: char = 'A';
+const START_DIR: DirectionAndPush = DirectionAndPush::Push;
+
+// outside vector is one per button.
+// each button has 1 or more path options.
+// create the overall set of path options by taking one from each button option
+fn combine_button_options<T: Clone>(v: Vec<Vec<Vec<T>>>) -> Vec<Vec<T>> {
+    if v.len() == 1 {
+        v[0].clone()
+    } else {
+        let mut result = vec![];
+        for first_button_option in &v[0] {
+            for rest_button_options in combine_button_options(v[1..].to_vec()) {
+                let mut current_path = first_button_option.clone();
+                current_path.extend(rest_button_options);
+                result.push(current_path);
+            }
+        }
+        result
+    }
 }
 
 // level 1 keypad
@@ -144,86 +164,12 @@ fn l1_shortest_between_2(
     }
 }
 
-fn l1_shortest_between(src: char, dest: char) -> Vec<DirectionAndPush> {
-    let (first_step, first_dest) = match (src, dest) {
-        (s, d) if !L1_CHARS.contains(&s) || !L1_CHARS.contains(&d) => {
-            panic!("Invalid source or destination")
-        }
-        (s, d) if s == d => {
-            return vec![];
-        }
-
-        ('0', 'A') => (DirectionAndPush::Right, 'A'),
-        ('0', _) => (DirectionAndPush::Up, '2'),
-        ('A', '0') => (DirectionAndPush::Left, '0'),
-        ('A', _) => (DirectionAndPush::Up, '3'),
-        ('1', d) if ['0', 'A', '2', '3'].contains(&d) => (DirectionAndPush::Right, '2'),
-        ('1', _) => (DirectionAndPush::Up, '4'),
-        ('2', '1') => (DirectionAndPush::Left, '1'),
-        ('2', '3') => (DirectionAndPush::Right, '3'),
-        ('2', d) if ['0', 'A'].contains(&d) => (DirectionAndPush::Down, '0'),
-        ('2', _) => (DirectionAndPush::Up, '5'),
-        ('3', d) if ['1', '2'].contains(&d) => (DirectionAndPush::Left, '2'),
-        ('3', d) if ['0', 'A'].contains(&d) => (DirectionAndPush::Down, 'A'),
-        ('3', _) => (DirectionAndPush::Up, '6'),
-        ('4', d) if ['5', '6'].contains(&d) => (DirectionAndPush::Right, '5'),
-        ('4', d) if ['7', '8', '9'].contains(&d) => (DirectionAndPush::Up, '7'),
-        ('4', _) => (DirectionAndPush::Down, '1'),
-        ('5', '4') => (DirectionAndPush::Left, '4'),
-        ('5', '6') => (DirectionAndPush::Right, '6'),
-        ('5', d) if ['7', '8', '9'].contains(&d) => (DirectionAndPush::Up, '8'),
-        ('5', _) => (DirectionAndPush::Down, '2'),
-        ('6', d) if ['4', '5'].contains(&d) => (DirectionAndPush::Left, '5'),
-        ('6', d) if ['7', '8', '9'].contains(&d) => (DirectionAndPush::Up, '9'),
-        ('6', _) => (DirectionAndPush::Down, '3'),
-        ('7', d) if ['8', '9'].contains(&d) => (DirectionAndPush::Right, '8'),
-        ('8', '7') => (DirectionAndPush::Left, '7'),
-        ('8', '9') => (DirectionAndPush::Right, '9'),
-        ('7', _) => (DirectionAndPush::Down, '4'),
-        ('8', _) => (DirectionAndPush::Down, '5'),
-        ('9', d) if ['7', '8'].contains(&d) => (DirectionAndPush::Left, '8'),
-        ('9', _) => (DirectionAndPush::Down, '6'),
-
-        _ => panic!(
-            "uh oh, I didn't account for the case of {} -> {}",
-            src, dest
-        ),
-    };
-
-    let mut result = vec![first_step];
-    if first_dest != dest {
-        let next_steps = l1_shortest_between(first_dest, dest);
-        result.extend(next_steps);
-    }
-
-    result
-}
-
-fn l1_shortest_path(l1_desired_buttons: Vec<char>) -> Vec<DirectionAndPush> {
-    let mut result = Vec::new();
-    let mut current_pos = START_POS;
-    for button in l1_desired_buttons {
-        let mut steps = l1_shortest_between(current_pos, button);
-
-        // sort them in order to group like directions, e.g. (Up, Up, Right) rather than (Up, Right, Up)
-        // because we don't need to move between pushes for like-directions, decresing total path length
-        steps.sort();
-
-        // println!("L1 steps from {} to {}: {:?}", current_pos, button, steps);
-        result.extend(steps);
-        result.push(DirectionAndPush::Push);
-        current_pos = button;
-    }
-    // println!("L1 complete: {:?}", result);
-    result
-}
-
 fn l1_shortest_paths(
     adj: &HashMap<(char, char), DirectionAndPush>,
     l1_desired_buttons: Vec<char>,
 ) -> Vec<Vec<DirectionAndPush>> {
     let mut options_per_step = vec![];
-    let mut current_pos = START_POS;
+    let mut current_pos = START_CHAR;
     for l1_button in l1_desired_buttons {
         let mut current_button_options = Vec::new();
         let step_options_to_button = l1_shortest_between_2(adj, &vec![], current_pos, l1_button);
@@ -324,28 +270,9 @@ fn l2_shortest_between_2(
     }
 }
 
-// outside vector is one per button.
-// each button has 1 or more path options.
-// create the overall set of path options by taking one from each button option
-fn combine_button_options<T: Clone>(v: Vec<Vec<Vec<T>>>) -> Vec<Vec<T>> {
-    if v.len() == 1 {
-        v[0].clone()
-    } else {
-        let mut result = vec![];
-        for first_button_option in &v[0] {
-            for rest_button_options in combine_button_options(v[1..].to_vec()) {
-                let mut current_path = first_button_option.clone();
-                current_path.extend(rest_button_options);
-                result.push(current_path);
-            }
-        }
-        result
-    }
-}
-
 fn l2_shortest_paths(prev_level_path: &Vec<DirectionAndPush>) -> Vec<Vec<DirectionAndPush>> {
     let mut options_per_step = vec![];
-    let mut current_pos = DirectionAndPush::Push;
+    let mut current_pos = START_DIR;
     for prev_level_button in prev_level_path {
         let mut current_button_options = Vec::new();
         let step_options_to_button = l2_shortest_between_2(&current_pos, &prev_level_button);
@@ -479,51 +406,6 @@ mod tests {
 
             println!();
         }
-    }
-
-    // fn l3_shortest(s: &str) -> Vec<DirectionAndPush> {
-    //     l2_shortest_path(l2_shortest_path(l1_shortest_path(s.chars().collect())))
-    // }
-
-    #[test]
-    fn test_l1_shortest_between() {
-        assert!(catch_unwind(|| l1_shortest_between('1', 'q')).is_err());
-
-        assert_eq!(l1_shortest_between('0', 'A'), vec![DirectionAndPush::Right]);
-        assert_eq!(l1_shortest_between('A', '0'), vec![DirectionAndPush::Left]);
-        assert_eq!(l1_shortest_between('1', '4'), vec![DirectionAndPush::Up]);
-        assert_eq!(l1_shortest_between('5', '8'), vec![DirectionAndPush::Up]);
-        assert_eq!(l1_shortest_between('5', '4'), vec![DirectionAndPush::Left]);
-        assert_eq!(l1_shortest_between('8', '9'), vec![DirectionAndPush::Right]);
-
-        assert_eq!(l1_shortest_between('A', 'A'), vec![]);
-
-        assert_eq!(
-            l1_shortest_between('0', '7'),
-            vec![
-                DirectionAndPush::Up,
-                DirectionAndPush::Up,
-                DirectionAndPush::Up,
-                DirectionAndPush::Left
-            ]
-        );
-        assert_eq!(
-            l1_shortest_between('A', '1'),
-            vec![
-                DirectionAndPush::Up,
-                DirectionAndPush::Left,
-                DirectionAndPush::Left
-            ]
-        );
-
-        assert_eq!(
-            l1_shortest_between('4', '2'),
-            vec![DirectionAndPush::Down, DirectionAndPush::Right]
-        );
-        assert_eq!(
-            l1_shortest_between('9', '5'),
-            vec![DirectionAndPush::Down, DirectionAndPush::Left]
-        );
     }
 
     #[test]
@@ -805,46 +687,4 @@ mod tests {
         ];
         assert_eq!(combine_button_options(v), expected);
     }
-    // #[test]
-    // fn test_lengths_for_sample() {
-    //     let mut button_str = "029A";
-    //     let mut shortest_path =
-    //         "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A";
-    //     assert_eq!(l3_shortest(button_str).len(), shortest_path.len());
-
-    //     button_str = "980A";
-    //     shortest_path = "<v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A";
-    //     assert_eq!(l3_shortest(button_str).len(), shortest_path.len());
-
-    //     button_str = "179A";
-    //     shortest_path = "<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A";
-    //     assert_eq!(l3_shortest(button_str).len(), shortest_path.len());
-
-    //     button_str = "456A";
-    //     shortest_path = "<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A";
-    //     assert_eq!(l3_shortest(button_str).len(), shortest_path.len());
-
-    //     button_str = "379A";
-    //     shortest_path = "<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A";
-    //     assert_eq!(l3_shortest(button_str).len(), shortest_path.len());
-    // }
-
-    // #[test]
-    // fn test_prints_for_paths() {
-    //     let mut dir_path = l1_shortest_path("029A".chars().collect());
-    //     let mut expected_dir_path = parse_dir_str("<A^A>^^AvvvA");
-    //     print_paths(&dir_path, &expected_dir_path);
-    //     println!();
-
-    //     dir_path = l2_shortest_path(dir_path);
-    //     expected_dir_path = parse_dir_str("v<<A>>^A<A>AvA<^AA>A<vAAA>^A");
-    //     print_paths(&dir_path, &expected_dir_path);
-
-    //     dir_path = l2_shortest_path(dir_path);
-    //     expected_dir_path =
-    //         parse_dir_str("<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A");
-    //     print_paths(&dir_path, &expected_dir_path);
-
-    //     // assert!(false)
-    //    }
 }
