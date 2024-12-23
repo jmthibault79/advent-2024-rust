@@ -36,35 +36,33 @@ fn apply_n_rules_h(h: HashMap<u64, u64>, n: usize) -> HashMap<u64, u64> {
     let mut iterator = h;
     for _i in 0..n {
         iterator = apply_rules_h(iterator);
-        // println!("i = {}", i);
     }
     iterator
 }
 
-pub fn d11p1(file_path: &str) -> u64 {
-    if let Some(stones) = utils::as_spaced_int_vec::<u64>(file_path).next() {
-        let h = utils::freqs_u64(stones);
-        apply_n_rules_h(h, 25).iter().map(|(_, count)| count).sum()
-    } else {
-        panic!("Could not parse input");
-    }
+pub fn d11p1(h: &HashMap<u64, u64>) -> u64 {
+    apply_n_rules_h(h.clone(), 25)
+        .iter()
+        .map(|(_, count)| count)
+        .sum()
 }
 
-pub fn d11p2(file_path: &str) -> u64 {
-    if let Some(stones) = utils::as_spaced_int_vec::<u64>(file_path).next() {
-        let h = utils::freqs_u64(stones);
-        apply_n_rules_h(h, 75).iter().map(|(_, count)| count).sum()
-    } else {
-        panic!("Could not parse input");
-    }
+// ok to move/consume h here
+pub fn d11p2(h: HashMap<u64, u64>) -> u64 {
+    apply_n_rules_h(h, 75).iter().map(|(_, count)| count).sum()
 }
 
 pub fn d11() {
     let file_path = "inputs/d11.txt";
-    let mut result = d11p1(file_path);
-    println!("Result Day 11 Part 1: {}", result);
-    result = d11p2(file_path);
-    println!("Result Day 11 Part 2: {}", result);
+    if let Some(stones) = utils::as_spaced_int_vec::<u64>(file_path).next() {
+        let h = utils::freqs_u64(stones);
+        let mut result = d11p1(&h);
+        println!("Result Day 11 Part 1: {}", result);
+        result = d11p2(h);
+        println!("Result Day 11 Part 2: {}", result);
+    } else {
+        panic!("Could not parse input");
+    }
 }
 
 #[cfg(test)]
