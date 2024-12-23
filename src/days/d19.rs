@@ -91,6 +91,7 @@ pub fn d19() {
     println!("Result Day 19 Part 2: {}", result);
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

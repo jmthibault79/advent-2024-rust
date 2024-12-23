@@ -100,6 +100,7 @@ pub fn d8() {
     println!("Result Day 8 Part 2: {}", result);
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

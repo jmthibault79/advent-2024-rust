@@ -370,7 +370,7 @@ pub fn d21p1(file_path: &str) -> usize {
     utils::string_iter(file_path).map(get_complexity).sum()
 }
 
-pub fn d21p2(file_path: &str) -> usize {
+pub fn d21p2(_file_path: &str) -> usize {
     0
 }
 
@@ -383,9 +383,8 @@ pub fn d21() {
     println!("Result Day 21 Part 2: {}", result);
 }
 
+#[cfg(test)]
 mod tests {
-    use std::vec;
-
     use super::*;
 
     #[test]

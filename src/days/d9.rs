@@ -160,6 +160,7 @@ pub fn d9() {
     println!("Result Day 9 Part 2: {}", result);
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

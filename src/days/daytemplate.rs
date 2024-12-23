@@ -14,7 +14,7 @@ pub fn dX() {
     println!("Result Day X Part 2: {}", result);
 }
 
-
+#[cfg(test)]
 mod tests {
     use super::*;
 
