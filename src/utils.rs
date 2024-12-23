@@ -1,10 +1,12 @@
 use core::str;
 use std::cmp::Eq;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::fs::{self, File};
 use std::hash::Hash;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use std::str::FromStr;
 
 pub mod matrix;
 pub mod plane;
@@ -19,7 +21,10 @@ pub fn read_all(path: &str) -> String {
     fs::read_to_string(path).expect(format!("Could not read file {}", path).as_str())
 }
 
-fn to_spaced_int_vec(s: String) -> Vec<u32> {
+fn to_spaced_int_vec<T: FromStr + Debug>(s: String) -> Vec<T>
+where
+    <T as FromStr>::Err: Debug,
+{
     if s.is_empty() {
         vec![]
     } else {
@@ -30,7 +35,10 @@ fn to_spaced_int_vec(s: String) -> Vec<u32> {
     }
 }
 
-pub fn as_spaced_int_vec(path: &str) -> impl Iterator<Item = Vec<u32>> {
+pub fn as_spaced_int_vec<T: FromStr + Debug>(path: &str) -> impl Iterator<Item = Vec<T>>
+where
+    <T as FromStr>::Err: Debug,
+{
     string_iter(path).map(to_spaced_int_vec)
 }
 
@@ -86,6 +94,10 @@ where
 
 pub fn equals(a: &str, b: &str) -> bool {
     a.chars().count() == b.chars().count() && a.chars().zip(b.chars()).all(|(a, b)| a == b)
+}
+
+pub fn digit_count(n: u64) -> u32 {
+    n.ilog10() + 1
 }
 
 #[cfg(test)]

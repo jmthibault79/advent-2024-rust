@@ -31,7 +31,7 @@ fn d2p1_is_safe(v: &Vec<u32>) -> bool {
 
 // count the number of "safe" rows
 pub fn d2p1(path: &str) -> i32 {
-    let input = utils::as_spaced_int_vec(path);
+    let input = utils::as_spaced_int_vec::<u32>(path);
     input.filter(d2p1_is_safe).count() as i32
 }
 
