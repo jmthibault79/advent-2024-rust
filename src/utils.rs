@@ -51,7 +51,15 @@ pub fn as_int_pairs(path: &str) -> impl Iterator<Item = (u32, u32)> {
     })
 }
 
-pub fn freqs<T: Hash + Eq>(v: Vec<T>) -> HashMap<T, u32> {
+pub fn freqs_u32<T: Hash + Eq>(v: Vec<T>) -> HashMap<T, u32> {
+    let mut freqs = HashMap::new();
+    for x in v {
+        freqs.entry(x).and_modify(|f| *f += 1).or_insert(1);
+    }
+    freqs
+}
+
+pub fn freqs_u64<T: Hash + Eq>(v: Vec<T>) -> HashMap<T, u64> {
     let mut freqs = HashMap::new();
     for x in v {
         freqs.entry(x).and_modify(|f| *f += 1).or_insert(1);

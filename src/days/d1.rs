@@ -16,7 +16,7 @@ fn d1p1(path: &str) -> u32 {
 fn d1p2(path: &str) -> u32 {
     let input = utils::as_int_pairs(path);
     let (l1, l2): (Vec<u32>, Vec<u32>) = input.unzip();
-    let l2_freqs = utils::freqs(l2);
+    let l2_freqs = utils::freqs_u32(l2);
     l1.iter().map(|x| x * l2_freqs.get(x).unwrap_or(&0)).sum()
 }
 
