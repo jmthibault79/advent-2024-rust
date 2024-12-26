@@ -13,14 +13,3 @@ pub fn d20() {
     result = d20p2(file_path);
     println!("Result Day 20 Part 2: {}", result);
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test() {
-        d20();
-        assert!(true);
-    }
-}

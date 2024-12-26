@@ -108,6 +108,38 @@ pub fn digit_count(n: u64) -> u32 {
     n.ilog10() + 1
 }
 
+// solves a pair of simultaneous equations of the form:
+// a1 * x + b1 * y = c1
+// a2 * x + b2 * y = c2
+// returns None if there is no solution (parallel lines) or if there is no positive integer solution
+pub fn simultaneous_equations_posint_result(
+    a1: &i64,
+    b1: &i64,
+    c1: &i64,
+    a2: &i64,
+    b2: &i64,
+    c2: &i64,
+) -> Option<(u64, u64)> {
+    let det = a1 * b2 - a2 * b1;
+    if det == 0 {
+        None
+    } else {
+        let x_numerator = c1 * b2 - c2 * b1;
+        let y_numerator = a1 * c2 - a2 * c1;
+        if x_numerator % det != 0 || y_numerator % det != 0 {
+            None
+        } else {
+            let x = x_numerator / det;
+            let y = y_numerator / det;
+            if x < 0 || y < 0 {
+                None
+            } else {
+                Some((x as u64, y as u64))
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -133,5 +165,46 @@ mod tests {
         assert!(!equals("ab", "a"));
         assert!(!equals("b", "ab"));
         assert!(!equals("ab", "b"));
+    }
+
+    #[test]
+    fn simult_test() {
+        // x = 7, y = 11, by definition
+        assert_eq!(
+            simultaneous_equations_posint_result(1, 0, 7, 0, 1, 11),
+            Some((7, 11))
+        );
+
+        // no solution because parallel
+        assert!(simultaneous_equations_posint_result(1, 2, 7, 2, 4, 11).is_none());
+
+        // None because non-integer solution
+        assert!(simultaneous_equations_posint_result(1, 0, 7, 0, 2, 11).is_none());
+
+        // None because the solution for x is negative
+        assert!(simultaneous_equations_posint_result(-1, 0, 7, 0, 1, 11).is_none());
+
+        // examples given by AoC
+        // 94a + 22b = 8400, 34a + 67b = 5400
+        // a = 80, b = 40
+        assert_eq!(
+            simultaneous_equations_posint_result(94, 22, 8400, 34, 67, 5400),
+            Some((80, 40))
+        );
+
+        // 26a + 67b = 12748, 66a + 21b = 12176
+        // NONE
+        assert!(simultaneous_equations_posint_result(26, 67, 12748, 66, 21, 12176).is_none());
+
+        // 17a + 84b = 7870, 86a + 37b = 6450
+        // a = 38, b = 86
+        assert_eq!(
+            simultaneous_equations_posint_result(17, 84, 7870, 86, 37, 6450),
+            Some((38, 86))
+        );
+
+        // 69a + 27b = 18641, 23a+ 71b = 10279
+        // NONE
+        assert!(simultaneous_equations_posint_result(69, 27, 18641, 23, 71, 10279).is_none());
     }
 }
