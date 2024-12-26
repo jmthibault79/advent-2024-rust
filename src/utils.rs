@@ -171,40 +171,78 @@ mod tests {
     fn simult_test() {
         // x = 7, y = 11, by definition
         assert_eq!(
-            simultaneous_equations_posint_result(1, 0, 7, 0, 1, 11),
+            simultaneous_equations_posint_result(&1, &0, &7, &0, &1, &11),
             Some((7, 11))
         );
 
         // no solution because parallel
-        assert!(simultaneous_equations_posint_result(1, 2, 7, 2, 4, 11).is_none());
+        assert!(simultaneous_equations_posint_result(&1, &2, &7, &2, &4, &11).is_none());
 
         // None because non-integer solution
-        assert!(simultaneous_equations_posint_result(1, 0, 7, 0, 2, 11).is_none());
+        assert!(simultaneous_equations_posint_result(&1, &0, &7, &0, &2, &11).is_none());
 
         // None because the solution for x is negative
-        assert!(simultaneous_equations_posint_result(-1, 0, 7, 0, 1, 11).is_none());
+        assert!(simultaneous_equations_posint_result(&-1, &0, &7, &0, &1, &11).is_none());
 
-        // examples given by AoC
+        // examples given by AoC d13p1
         // 94a + 22b = 8400, 34a + 67b = 5400
         // a = 80, b = 40
         assert_eq!(
-            simultaneous_equations_posint_result(94, 22, 8400, 34, 67, 5400),
+            simultaneous_equations_posint_result(&94, &22, &8400, &34, &67, &5400),
             Some((80, 40))
         );
 
         // 26a + 67b = 12748, 66a + 21b = 12176
         // NONE
-        assert!(simultaneous_equations_posint_result(26, 67, 12748, 66, 21, 12176).is_none());
+        assert!(simultaneous_equations_posint_result(&26, &67, &12748, &66, &21, &12176).is_none());
 
         // 17a + 84b = 7870, 86a + 37b = 6450
         // a = 38, b = 86
         assert_eq!(
-            simultaneous_equations_posint_result(17, 84, 7870, 86, 37, 6450),
+            simultaneous_equations_posint_result(&17, &84, &7870, &86, &37, &6450),
             Some((38, 86))
         );
 
         // 69a + 27b = 18641, 23a+ 71b = 10279
         // NONE
-        assert!(simultaneous_equations_posint_result(69, 27, 18641, 23, 71, 10279).is_none());
+        assert!(simultaneous_equations_posint_result(&69, &27, &18641, &23, &71, &10279).is_none());
+
+        // examples given by AoC d13p2
+        assert!(simultaneous_equations_posint_result(
+            &94,
+            &22,
+            &10000000008400,
+            &34,
+            &67,
+            &10000000005400
+        )
+        .is_none());
+        assert!(simultaneous_equations_posint_result(
+            &26,
+            &67,
+            &10000000012748,
+            &66,
+            &21,
+            &10000000012176
+        )
+        .is_some());
+        assert!(simultaneous_equations_posint_result(
+            &17,
+            &84,
+            &10000000007870,
+            &86,
+            &37,
+            &10000000006450
+        )
+        .is_none());
+        assert!(simultaneous_equations_posint_result(
+            &69,
+            &27,
+            &10000000018641,
+            &23,
+            &71,
+            &10000000010279
+        )
+        .is_some());
     }
 }
