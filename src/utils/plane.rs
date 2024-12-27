@@ -9,6 +9,18 @@ pub enum Direction {
     Right,
 }
 
+impl Direction {
+    pub fn from_char(c: char) -> Self {
+        match c {
+            '^' => Direction::Up,
+            'v' => Direction::Down,
+            '<' => Direction::Left,
+            '>' => Direction::Right,
+            _ => panic!("Invalid direction"),
+        }
+    }
+}
+
 #[derive(PartialEq, Debug, Clone)]
 pub struct MovingObject {
     pub row: usize,
@@ -46,14 +58,23 @@ pub fn move_one(
     }
 }
 
-fn obstacle_ahead(plane: &Vec<Vec<char>>, obstacles: &Vec<char>, me: &MovingObject) -> bool {
+pub fn obstacle_ahead(
+    plane: &Vec<Vec<char>>,
+    obstacles: &Vec<char>,
+    me: &MovingObject,
+) -> Option<char> {
     let MovingObject {
         row,
         col,
         dir: _,
         out_of_bounds,
     } = move_one(me.row, me.col, plane.len(), plane[0].len(), me.dir);
-    !out_of_bounds && obstacles.contains(&plane[row][col])
+    let char_ahead = plane[row][col];
+    if !out_of_bounds && obstacles.contains(&char_ahead) {
+        Some(char_ahead)
+    } else {
+        None
+    }
 }
 
 fn move_forward_or_turn_right(
@@ -61,7 +82,7 @@ fn move_forward_or_turn_right(
     obstacles: &Vec<char>,
     start: &MovingObject,
 ) -> MovingObject {
-    if obstacle_ahead(plane, &obstacles, &start) {
+    if obstacle_ahead(plane, &obstacles, &start).is_some() {
         let new_dir = match start.dir {
             Direction::Up => Direction::Right,
             Direction::Right => Direction::Down,
@@ -117,6 +138,19 @@ pub fn unique_spaces(path: &Vec<MovingObject>) -> Vec<(usize, usize)> {
         }
     }
     unique
+}
+
+// find some character in the plane
+// expectation: only one of this character exists
+pub fn find_unique_element(plane: &Vec<Vec<char>>, to_find: char) -> (usize, usize) {
+    for (row, row_vec) in plane.iter().enumerate() {
+        for (col, char_at_col) in row_vec.iter().enumerate() {
+            if *char_at_col == to_find {
+                return (row, col);
+            }
+        }
+    }
+    panic!("Guard not found");
 }
 
 #[cfg(test)]
@@ -212,60 +246,52 @@ mod tests {
         // 2x2 map
         let plane = vec![vec!['.', '.'], vec!['.', '.']];
 
-        assert_eq!(
-            obstacle_ahead(
-                &plane,
-                &obstacles,
-                &MovingObject {
-                    row: 0,
-                    col: 0,
-                    dir: Direction::Right,
-                    out_of_bounds: false
-                }
-            ),
-            false
-        );
-        assert_eq!(
-            obstacle_ahead(
-                &plane,
-                &obstacles,
-                &MovingObject {
-                    row: 0,
-                    col: 0,
-                    dir: Direction::Down,
-                    out_of_bounds: false
-                }
-            ),
-            false
-        );
+        assert!(obstacle_ahead(
+            &plane,
+            &obstacles,
+            &MovingObject {
+                row: 0,
+                col: 0,
+                dir: Direction::Right,
+                out_of_bounds: false
+            }
+        )
+        .is_none());
+        assert!(obstacle_ahead(
+            &plane,
+            &obstacles,
+            &MovingObject {
+                row: 0,
+                col: 0,
+                dir: Direction::Down,
+                out_of_bounds: false
+            }
+        )
+        .is_none());
 
         // exits are not obstacles
-        assert_eq!(
-            obstacle_ahead(
-                &plane,
-                &obstacles,
-                &MovingObject {
-                    row: 0,
-                    col: 0,
-                    dir: Direction::Left,
-                    out_of_bounds: false
-                }
-            ),
-            false
-        );
-        assert_eq!(
-            obstacle_ahead(
-                &plane,
-                &obstacles,
-                &MovingObject {
-                    row: 0,
-                    col: 0,
-                    dir: Direction::Up,
-                    out_of_bounds: false
-                }
-            ),
-            false
-        );
+        assert!(obstacle_ahead(
+            &plane,
+            &obstacles,
+            &MovingObject {
+                row: 0,
+                col: 0,
+                dir: Direction::Left,
+                out_of_bounds: false
+            }
+        )
+        .is_none());
+        assert!(obstacle_ahead(
+            &plane,
+            &obstacles,
+            &MovingObject {
+                row: 0,
+                col: 0,
+                dir: Direction::Up,
+                out_of_bounds: false
+            }
+        )
+        .is_none());
 
         let plane = vec![vec!['.', 'x'], vec!['.', '.']];
         assert_eq!(
@@ -279,21 +305,19 @@ mod tests {
                     out_of_bounds: false
                 }
             ),
-            true
+            Some('x')
         );
-        assert_eq!(
-            obstacle_ahead(
-                &plane,
-                &obstacles,
-                &MovingObject {
-                    row: 0,
-                    col: 0,
-                    dir: Direction::Down,
-                    out_of_bounds: false
-                }
-            ),
-            false
-        );
+        assert!(obstacle_ahead(
+            &plane,
+            &obstacles,
+            &MovingObject {
+                row: 0,
+                col: 0,
+                dir: Direction::Down,
+                out_of_bounds: false
+            }
+        )
+        .is_none());
         assert_eq!(
             obstacle_ahead(
                 &plane,
@@ -305,21 +329,19 @@ mod tests {
                     out_of_bounds: false
                 }
             ),
-            true
+            Some('x')
         );
-        assert_eq!(
-            obstacle_ahead(
-                &plane,
-                &obstacles,
-                &MovingObject {
-                    row: 1,
-                    col: 1,
-                    dir: Direction::Left,
-                    out_of_bounds: false
-                }
-            ),
-            false
-        );
+        assert!(obstacle_ahead(
+            &plane,
+            &obstacles,
+            &MovingObject {
+                row: 1,
+                col: 1,
+                dir: Direction::Left,
+                out_of_bounds: false
+            }
+        )
+        .is_none());
     }
 
     #[test]

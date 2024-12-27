@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-fn to_char_vec(s: String) -> Vec<char> {
+pub fn to_char_vec(s: String) -> Vec<char> {
     s.chars().collect()
 }
 

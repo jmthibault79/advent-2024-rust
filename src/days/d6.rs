@@ -5,20 +5,15 @@ const GUARD: char = '^';
 const OBSTACLE: char = '#';
 
 fn find_guard(plane: &Vec<Vec<char>>) -> plane::MovingObject {
-    for (row, row_vec) in plane.iter().enumerate() {
-        for (col, char_at_col) in row_vec.iter().enumerate() {
-            if *char_at_col == GUARD {
-                // we know that the guard will always be facing up at the start
-                return plane::MovingObject {
-                    row,
-                    col,
-                    dir: plane::Direction::Up,
-                    out_of_bounds: false,
-                };
-            }
-        }
+    let (row, col) = plane::find_unique_element(plane, GUARD);
+
+    // we know that the guard will always be facing up at the start
+    plane::MovingObject {
+        row,
+        col,
+        dir: plane::Direction::Up,
+        out_of_bounds: false,
     }
-    panic!("Guard not found");
 }
 
 fn d6p1(file_path: &str) -> usize {
