@@ -63,12 +63,14 @@ pub fn obstacle_ahead(
     obstacles: &Vec<char>,
     me: &MovingObject,
 ) -> Option<char> {
+    let row_count = plane.len();
+    let col_count = plane[0].len();
     let MovingObject {
         row,
         col,
         dir: _,
         out_of_bounds,
-    } = move_one(me.row, me.col, plane.len(), plane[0].len(), me.dir);
+    } = move_one(me.row, me.col, row_count, col_count, me.dir);
     let char_ahead = plane[row][col];
     if !out_of_bounds && obstacles.contains(&char_ahead) {
         Some(char_ahead)
@@ -150,7 +152,19 @@ pub fn find_unique_element(plane: &Vec<Vec<char>>, to_find: char) -> (usize, usi
             }
         }
     }
-    panic!("Guard not found");
+    panic!("{} not found", to_find);
+}
+
+pub fn find_all_elements(plane: &Vec<Vec<char>>, to_find: char) -> Vec<(usize, usize)> {
+    let mut result = vec![];
+    for (row, row_vec) in plane.iter().enumerate() {
+        for (col, char_at_col) in row_vec.iter().enumerate() {
+            if *char_at_col == to_find {
+                result.push((row, col));
+            }
+        }
+    }
+    result
 }
 
 #[cfg(test)]
