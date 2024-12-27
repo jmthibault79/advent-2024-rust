@@ -1,5 +1,7 @@
 use crate::utils;
+use crate::utils::matrix;
 use regex::Regex;
+use std::io;
 
 // parse lines like p=0,4 v=3,-3 into (0, 4, 3, -3)
 fn parse(file_path: &str) -> Vec<(isize, isize, isize, isize)> {
@@ -16,7 +18,7 @@ fn parse(file_path: &str) -> Vec<(isize, isize, isize, isize)> {
         let vx = vx_str.parse().expect("integer expected");
         let vy = vy_str.parse().expect("integer expected");
 
-        println!("{} {} {} {}", px, py, vx, vy);
+        // println!("{} {} {} {}", px, py, vx, vy);
         result.push((px, py, vx, vy));
     }
 
@@ -31,11 +33,26 @@ fn move_n(
     py: isize,
     vx: isize,
     vy: isize,
-    n: usize,
+    n: isize,
 ) -> (isize, isize) {
-    let new_px = (px + n as isize * vx).rem_euclid(x_total as isize);
-    let new_py = (py + n as isize * vy).rem_euclid(y_total as isize);
+    let new_px = (px + n * vx).rem_euclid(x_total as isize);
+    let new_py = (py + n * vy).rem_euclid(y_total as isize);
     (new_px, new_py)
+}
+
+fn move_all_n(
+    x_total: usize,
+    y_total: usize,
+    robots: &Vec<(isize, isize, isize, isize)>,
+    n: isize,
+) -> Vec<(isize, isize)> {
+    robots
+        .iter()
+        .map(|&(px, py, vx, vy)| {
+            let (new_px, new_py) = move_n(x_total, y_total, px, py, vx, vy, n);
+            (new_px, new_py)
+        })
+        .collect()
 }
 
 // count the number of robots in each quadrant and multiply.
@@ -59,15 +76,61 @@ fn safety_factor(x_total: usize, y_total: usize, robots: &Vec<(isize, isize)>) -
 
 pub fn d14p1(file_path: &str, x_total: usize, y_total: usize) -> usize {
     let robot_starts = parse(file_path);
-    let robot_ends = robot_starts
-        .iter()
-        .map(|&(px, py, vx, vy)| move_n(x_total, y_total, px, py, vx, vy, 100))
-        .collect::<Vec<_>>();
+    let robot_ends = move_all_n(x_total, y_total, &robot_starts, 100);
     safety_factor(x_total, y_total, &robot_ends)
 }
 
-pub fn d14p2(file_path: &str) -> usize {
-    0
+fn print_robots_after_n(
+    x_total: usize,
+    y_total: usize,
+    robots: &Vec<(isize, isize, isize, isize)>,
+    n: isize,
+) -> isize {
+    let mut to_print = vec![vec!['.'; x_total]; y_total];
+
+    for robot in move_all_n(x_total, y_total, robots, n) {
+        let (px, py) = robot;
+        to_print[py as usize][px as usize] = '#';
+    }
+    matrix::pretty_print(&to_print);
+    println!("{}", n);
+    n
+}
+
+pub fn d14p2(file_path: &str, x_total: usize, y_total: usize) -> usize {
+    let robot_starts = parse(file_path);
+    let mut n = 0;
+
+    loop {
+        println!("move robots (Y/n)?");
+
+        let mut yesno: String = String::new();
+        io::stdin()
+            .read_line(&mut yesno)
+            .expect("Failed to read line");
+        if yesno.contains("n") {
+            break;
+        } else {
+            n += 1;
+            print_robots_after_n(x_total, y_total, &robot_starts, n);
+        }
+    }
+
+    // empirically, I observed the robots clustering:
+    // vertically at 38, 139, 240 (cycle = 101)
+    // horizontally at 88, 191 (cycle = 103)
+
+    // where do these cycles converge?
+    // n = 38 + 101 * x
+    // n = 88 + 103 * x
+    // x = -25, n = -2487
+
+    n = -2487;
+    // YES I do see it there
+    print_robots_after_n(x_total, y_total, &robot_starts, n);
+
+    // try converting to positive using wraparound modulo logic
+    n.rem_euclid((x_total * y_total) as isize) as usize
 }
 
 pub fn d14() {
@@ -77,7 +140,7 @@ pub fn d14() {
     let (x_total, y_total) = (101, 103); // real input
     let mut result = d14p1(file_path, x_total, y_total);
     println!("Result Day 14 Part 1: {}", result);
-    result = d14p2(file_path);
+    result = d14p2(file_path, x_total, y_total);
     println!("Result Day 14 Part 2: {}", result);
 }
 
