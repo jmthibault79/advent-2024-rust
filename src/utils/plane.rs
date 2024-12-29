@@ -1,7 +1,7 @@
 // handles 2D movement in a plane:
 // row 0 is on the top and 0,0 is top left
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
 pub enum Direction {
     Up,
     Down,
@@ -21,7 +21,7 @@ impl Direction {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Hash, Clone)]
 pub struct MovingObject {
     pub row: usize,
     pub col: usize,
