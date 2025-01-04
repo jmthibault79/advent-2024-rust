@@ -91,6 +91,11 @@ pub fn find_all<T: PartialEq>(mat: &Vec<Vec<T>>, target: T) -> Vec<(usize, usize
     result
 }
 
+// returns (row_count, col_count)
+pub fn dimensions<T: PartialEq>(mat: &Vec<Vec<T>>) -> (usize, usize) {
+    (mat.len(), mat[0].len())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
