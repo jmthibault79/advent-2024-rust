@@ -15,6 +15,8 @@ const FORWARD_SCORE: usize = 1;
 const TURN_SCORE: usize = 1000;
 
 fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
+    let (row_count, col_count) = matrix::dimensions(&maze);
+
     // all non-walls
     let mut spaces = vec![];
     for (row_num, row) in maze.iter().enumerate() {
@@ -32,24 +34,25 @@ fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
         }
     }
 
+    // TODO: do I really need both of these?
+
     let mut to_visit: PriorityQueue<MovingObject, Reverse<usize>> = PriorityQueue::new();
+    let mut score = HashMap::new();
     spaces.iter().for_each(|mo| {
         to_visit.push(mo.clone(), Reverse(usize::MAX));
+        score.insert(mo.clone(), usize::MAX);
     });
-
-    let (row_count, col_count) = matrix::dimensions(&maze);
 
     let (start_row, start_col) = plane::find_unique_element(&maze, START);
     let (end_row, end_col) = plane::find_unique_element(&maze, END);
 
-    let mut score = HashMap::new();
     let mut current_node = MovingObject {
         row: start_row,
         col: start_col,
         dir: START_DIRECTION,
         out_of_bounds: false,
     };
-    score.insert(current_node.clone(), 0_usize);
+    score.insert(current_node.clone(), 0);
 
     while !to_visit.is_empty() {
         // all possible neighbor nodes: move forward, turn right, turn left
@@ -87,23 +90,15 @@ fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
         ));
 
         neighbors.iter().for_each(|(neighbor, additional)| {
-            let total_score = score.get(&neighbor).unwrap() + additional;
-            match score.get(&neighbor) {
-                Some(existing_score) => {
-                    if total_score < *existing_score {
-                        score.insert(neighbor.clone(), total_score);
-                        if to_visit.get(&neighbor).is_some() {
-                            to_visit.change_priority(&neighbor, Reverse(total_score));
-                        }
-                    }
-                }
-                None => {
-                    score.insert(neighbor.clone(), total_score);
-                    to_visit.push(neighbor.clone(), Reverse(total_score));
+            let new_score = score.get(&current_node).unwrap() + additional;
+            let existing_score = score.get(&neighbor).unwrap();
+            if new_score < *existing_score {
+                score.insert(neighbor.clone(), new_score);
+                if to_visit.get(&neighbor).is_some() {
+                    to_visit.change_priority(&neighbor, Reverse(new_score));
                 }
             }
         });
-
         neighbors.clear();
 
         to_visit.remove(&current_node);
@@ -112,7 +107,19 @@ fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
         }
     }
 
-    0
+    let min_score = Direction::all()
+        .iter()
+        .flat_map(|dir| {
+            score.get(&MovingObject {
+                row: end_row,
+                col: end_col,
+                dir: dir.clone(),
+                out_of_bounds: false,
+            })
+        })
+        .min()
+        .unwrap();
+    *min_score
 }
 
 pub fn d16p1(file_path: &str) -> usize {
@@ -125,7 +132,9 @@ pub fn d16p2(file_path: &str) -> usize {
 }
 
 pub fn d16() {
-    let file_path = "inputs/d16sample1.txt";
+    // let file_path = "inputs/d16sample1.txt";
+    // let file_path = "inputs/d16sample2.txt";
+    let file_path = "inputs/d16.txt";
     let mut result = d16p1(file_path);
     println!("Result Day 16 Part 1: {}", result);
     result = d16p2(file_path);
@@ -140,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_shortest_small() {
-        let maze = vec![
+        let mut maze = vec![
             vec!['#', '#', '#', '#'],
             vec!['#', '.', 'E', '#'],
             vec!['#', 'S', '.', '#'],
@@ -148,5 +157,14 @@ mod tests {
         ];
         // right 1, turn 1000, up 1
         assert_eq!(shortest_path(&maze), 1002);
+
+        maze = vec![
+            vec!['#', '#', '#', '#'],
+            vec!['#', '.', 'E', '#'],
+            vec!['#', 'S', '#', '#'],
+            vec!['#', '#', '#', '#'],
+        ];
+        // turn 1000, up 1, turn 1000, right 1
+        assert_eq!(shortest_path(&maze), 2002);
     }
 }
