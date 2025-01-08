@@ -46,51 +46,46 @@ fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
     let (start_row, start_col) = plane::find_unique_element(&maze, START);
     let (end_row, end_col) = plane::find_unique_element(&maze, END);
 
-    let mut current_node = MovingObject {
+    let start_node = MovingObject {
         row: start_row,
         col: start_col,
         dir: START_DIRECTION,
         out_of_bounds: false,
     };
-    score.insert(current_node.clone(), 0);
+    score.insert(start_node.clone(), 0);
+    to_visit.change_priority(&start_node, Reverse(0));
 
-    while !to_visit.is_empty() {
+    while let Some(curr) = to_visit.pop().map(|(mo, _)| mo) {
         // all possible neighbor nodes: move forward, turn right, turn left
 
         let mut neighbors = vec![];
-        if plane::obstacle_ahead(&maze, &vec![WALL], &current_node).is_none() {
+        if plane::obstacle_ahead(&maze, &vec![WALL], &curr).is_none() {
             neighbors.push((
-                plane::move_one(
-                    current_node.row,
-                    current_node.col,
-                    row_count,
-                    col_count,
-                    current_node.dir,
-                ),
+                plane::move_one(curr.row, curr.col, row_count, col_count, curr.dir),
                 FORWARD_SCORE,
             ));
         }
         neighbors.push((
             MovingObject {
-                row: current_node.row,
-                col: current_node.col,
-                dir: plane::turn_right_90_degrees(current_node.dir),
+                row: curr.row,
+                col: curr.col,
+                dir: plane::turn_right_90_degrees(curr.dir),
                 out_of_bounds: false,
             },
             TURN_SCORE,
         ));
         neighbors.push((
             MovingObject {
-                row: current_node.row,
-                col: current_node.col,
-                dir: plane::turn_left_90_degrees(current_node.dir),
+                row: curr.row,
+                col: curr.col,
+                dir: plane::turn_left_90_degrees(curr.dir),
                 out_of_bounds: false,
             },
             TURN_SCORE,
         ));
 
         neighbors.iter().for_each(|(neighbor, additional)| {
-            let new_score = score.get(&current_node).unwrap() + additional;
+            let new_score = score.get(&curr).unwrap() + additional;
             let existing_score = score.get(&neighbor).unwrap();
             if new_score < *existing_score {
                 score.insert(neighbor.clone(), new_score);
@@ -99,12 +94,8 @@ fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
                 }
             }
         });
-        neighbors.clear();
 
-        to_visit.remove(&current_node);
-        if to_visit.peek().is_some() {
-            current_node = to_visit.pop().unwrap().0;
-        }
+        neighbors.clear();
     }
 
     let min_score = Direction::all()

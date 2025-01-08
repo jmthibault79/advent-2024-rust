@@ -324,7 +324,7 @@ pub fn d15() {
 mod tests {
     use std::vec;
 
-    use matrix::pretty_print;
+    // use matrix::pretty_print;
 
     use super::*;
 
