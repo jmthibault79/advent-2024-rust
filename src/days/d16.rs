@@ -14,34 +14,91 @@ const START_DIRECTION: Direction = Direction::Right;
 const FORWARD_SCORE: usize = 1;
 const TURN_SCORE: usize = 1000;
 
-fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
-    let (row_count, col_count) = matrix::dimensions(&maze);
+fn init_structs(
+    maze: &Vec<Vec<char>>,
+) -> (
+    PriorityQueue<MovingObject, Reverse<usize>>,
+    HashMap<MovingObject, usize>,
+) {
+    let mut to_visit = PriorityQueue::new();
+    let mut score = HashMap::new();
 
     // all non-walls
-    let mut spaces = vec![];
     for (row_num, row) in maze.iter().enumerate() {
         for (col_num, space) in row.iter().enumerate() {
             if *space != WALL {
                 Direction::all().iter().for_each(|dir| {
-                    spaces.push(MovingObject {
+                    let mo = MovingObject {
                         row: row_num,
                         col: col_num,
-                        dir: dir.clone(),
+                        dir: *dir,
                         out_of_bounds: false,
-                    });
+                    };
+                    to_visit.push(mo.clone(), Reverse(usize::MAX));
+                    score.insert(mo.clone(), usize::MAX);
                 });
             }
         }
     }
 
-    // TODO: do I really need both of these?
+    (to_visit, score)
+}
 
-    let mut to_visit: PriorityQueue<MovingObject, Reverse<usize>> = PriorityQueue::new();
-    let mut score = HashMap::new();
-    spaces.iter().for_each(|mo| {
-        to_visit.push(mo.clone(), Reverse(usize::MAX));
-        score.insert(mo.clone(), usize::MAX);
-    });
+fn get_neighbors(maze: &Vec<Vec<char>>, curr: &MovingObject) -> Vec<(MovingObject, usize)> {
+    // all possible neighbor nodes: move forward, turn right, turn left
+
+    let mut neighbors = vec![
+        (
+            MovingObject {
+                row: curr.row,
+                col: curr.col,
+                dir: plane::turn_right_90_degrees(curr.dir),
+                out_of_bounds: false,
+            },
+            TURN_SCORE,
+        ),
+        (
+            MovingObject {
+                row: curr.row,
+                col: curr.col,
+                dir: plane::turn_left_90_degrees(curr.dir),
+                out_of_bounds: false,
+            },
+            TURN_SCORE,
+        ),
+    ];
+
+    if plane::obstacle_ahead(&maze, &vec![WALL], &curr).is_none() {
+        let (row_count, col_count) = matrix::dimensions(&maze);
+
+        neighbors.push((
+            plane::move_one(curr.row, curr.col, row_count, col_count, curr.dir),
+            FORWARD_SCORE,
+        ));
+    }
+
+    neighbors
+}
+
+fn visit_neighbor(
+    to_visit: &mut PriorityQueue<MovingObject, Reverse<usize>>,
+    score: &mut HashMap<MovingObject, usize>,
+    current: &MovingObject,
+    neighbor: &MovingObject,
+    additional_score: &usize,
+) {
+    let new_score = score.get(current).unwrap() + additional_score;
+    let existing_score = score.get(&neighbor).unwrap();
+    if new_score < *existing_score {
+        score.insert(neighbor.clone(), new_score);
+        if to_visit.get(neighbor).is_some() {
+            to_visit.change_priority(neighbor, Reverse(new_score));
+        }
+    }
+}
+
+fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
+    let (mut to_visit, mut score) = init_structs(maze);
 
     let (start_row, start_col) = plane::find_unique_element(&maze, START);
     let (end_row, end_col) = plane::find_unique_element(&maze, END);
@@ -52,50 +109,21 @@ fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
         dir: START_DIRECTION,
         out_of_bounds: false,
     };
-    score.insert(start_node.clone(), 0);
     to_visit.change_priority(&start_node, Reverse(0));
+    score.insert(start_node, 0);
 
-    while let Some(curr) = to_visit.pop().map(|(mo, _)| mo) {
-        // all possible neighbor nodes: move forward, turn right, turn left
-
-        let mut neighbors = vec![];
-        if plane::obstacle_ahead(&maze, &vec![WALL], &curr).is_none() {
-            neighbors.push((
-                plane::move_one(curr.row, curr.col, row_count, col_count, curr.dir),
-                FORWARD_SCORE,
-            ));
-        }
-        neighbors.push((
-            MovingObject {
-                row: curr.row,
-                col: curr.col,
-                dir: plane::turn_right_90_degrees(curr.dir),
-                out_of_bounds: false,
-            },
-            TURN_SCORE,
-        ));
-        neighbors.push((
-            MovingObject {
-                row: curr.row,
-                col: curr.col,
-                dir: plane::turn_left_90_degrees(curr.dir),
-                out_of_bounds: false,
-            },
-            TURN_SCORE,
-        ));
-
-        neighbors.iter().for_each(|(neighbor, additional)| {
-            let new_score = score.get(&curr).unwrap() + additional;
-            let existing_score = score.get(&neighbor).unwrap();
-            if new_score < *existing_score {
-                score.insert(neighbor.clone(), new_score);
-                if to_visit.get(&neighbor).is_some() {
-                    to_visit.change_priority(&neighbor, Reverse(new_score));
-                }
-            }
-        });
-
-        neighbors.clear();
+    while let Some(current) = to_visit.pop().map(|(mo, _)| mo) {
+        get_neighbors(&maze, &current)
+            .iter()
+            .for_each(|(neighbor, additional_score)| {
+                visit_neighbor(
+                    &mut to_visit,
+                    &mut score,
+                    &current,
+                    neighbor,
+                    additional_score,
+                )
+            });
     }
 
     let min_score = Direction::all()
@@ -104,7 +132,7 @@ fn shortest_path(maze: &Vec<Vec<char>>) -> usize {
             score.get(&MovingObject {
                 row: end_row,
                 col: end_col,
-                dir: dir.clone(),
+                dir: *dir,
                 out_of_bounds: false,
             })
         })
