@@ -19,6 +19,15 @@ impl Direction {
             _ => panic!("Invalid direction"),
         }
     }
+
+    pub fn all() -> Vec<Direction> {
+        vec![
+            Direction::Up,
+            Direction::Right,
+            Direction::Down,
+            Direction::Left,
+        ]
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone)]
@@ -79,18 +88,31 @@ pub fn obstacle_ahead(
     }
 }
 
+pub fn turn_right_90_degrees(dir: Direction) -> Direction {
+    match dir {
+        Direction::Up => Direction::Right,
+        Direction::Right => Direction::Down,
+        Direction::Down => Direction::Left,
+        Direction::Left => Direction::Up,
+    }
+}
+
+pub fn turn_left_90_degrees(dir: Direction) -> Direction {
+    match dir {
+        Direction::Up => Direction::Left,
+        Direction::Left => Direction::Down,
+        Direction::Down => Direction::Right,
+        Direction::Right => Direction::Up,
+    }
+}
+
 fn move_forward_or_turn_right(
     plane: &Vec<Vec<char>>,
     obstacles: &Vec<char>,
     start: &MovingObject,
 ) -> MovingObject {
     if obstacle_ahead(plane, &obstacles, &start).is_some() {
-        let new_dir = match start.dir {
-            Direction::Up => Direction::Right,
-            Direction::Right => Direction::Down,
-            Direction::Down => Direction::Left,
-            Direction::Left => Direction::Up,
-        };
+        let new_dir = turn_right_90_degrees(start.dir);
         move_forward_or_turn_right(
             plane,
             obstacles,
