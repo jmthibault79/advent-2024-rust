@@ -79,40 +79,25 @@ mod tests {
 
     #[test]
     fn test_apply_rules_h() {
-        let mut h = HashMap::new();
-        h.insert(0, 1);
-        h.insert(1, 1);
-        h.insert(10, 1);
-        h.insert(99, 1);
-        h.insert(999, 1);
+        let h = HashMap::from([(0, 1), (1, 1), (10, 1), (99, 1), (999, 1)]);
 
-        let mut expected = HashMap::new();
-        expected.insert(0, 1);
-        expected.insert(1, 2);
-        expected.insert(9, 2);
-        expected.insert(2024, 1);
-        expected.insert(2021976, 1);
+        let expected = HashMap::from([(0, 1), (1, 2), (9, 2), (2024, 1), (2021976, 1)]);
 
         assert_eq!(apply_rules_h(h), expected);
 
-        let mut h2 = HashMap::new();
-        let mut exp2 = HashMap::new();
-
-        h2.insert(0, 2);
-        h2.insert(1, 3);
-        h2.insert(11, 4);
-
-        exp2.insert(1, 10); // 2 from 0, 8 from 11
-        exp2.insert(2024, 3);
+        let h2 = HashMap::from([(0, 2), (1, 3), (11, 4)]);
+        let exp2 = HashMap::from([
+            // 2 from 0, 8 from 11
+            (1, 10),
+            (2024, 3),
+        ]);
 
         assert_eq!(apply_rules_h(h2), exp2);
     }
 
     #[test]
     fn test_apply_n_rules_h() {
-        let mut h = HashMap::new();
-        h.insert(125, 1);
-        h.insert(17, 1);
+        let h = HashMap::from([(125, 1), (17, 1)]);
         let h2 = h.clone();
         assert_eq!(
             apply_n_rules_h(h, 6)

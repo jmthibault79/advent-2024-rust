@@ -4,7 +4,6 @@ use multimap::MultiMap;
 use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
 
 const WALL: char = '#';
 const START: char = 'S';
@@ -214,8 +213,7 @@ fn tiles_along_shortest_paths(maze: &Vec<Vec<char>>) -> usize {
         })
         .filter(|mo| score.get(mo).unwrap() == &min_score(maze, &score))
         .flat_map(|node| {
-            let mut nodes_so_far: HashSet<(usize, usize)> = HashSet::new();
-            nodes_so_far.insert((node.row, node.col));
+            let nodes_so_far: HashSet<(usize, usize)> = HashSet::from([(node.row, node.col)]);
             shortest_path_for_node(&prev_nodes, &node, &nodes_so_far, start_row, start_col)
         })
         .collect();
@@ -267,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_tiles_along_shortest_small() {
-        let mut maze = vec![
+        let maze = vec![
             vec!['#', '#', '#', '#'],
             vec!['#', '.', 'E', '#'],
             vec!['#', 'S', '.', '#'],
