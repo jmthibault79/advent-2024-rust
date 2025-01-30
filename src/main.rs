@@ -19,7 +19,8 @@ fn main() {
     // days::d13::d13();
     // days::d14::d14();
     // days::d15::d15();
-    days::d16::d16();
+    // days::d16::d16();
+    days::d17::d17();
     // days::d19::d19();
     // days::d20::d20();
     // days::d21::d21();   // slow, did not attempt part 2 - come back to this sometime
